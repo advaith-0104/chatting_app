@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App - Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        /* General Body Styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Container for the entire dashboard */
+        .dashboard-container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px; /* Increased max-width for better layout */
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 80vh; /* Ensure it takes up vertical space */
+        }
+
+        /* Header with Welcome, Manage Friends, and Logout */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: 2em;
+            color: #333;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .manage-friends-btn {
+            background-color: #17a2b8; /* Info blue */
+            color: white;
+        }
+
+        .manage-friends-btn:hover {
+            background-color: #138496;
+        }
+
+        .logout-btn {
+            background-color: #dc3545; /* Red logout button */
+            color: white;
+        }
+
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* Sections for Users and Friends */
+        .dashboard-sections {
+            display: flex;
+            gap: 20px;
+            flex-grow: 1; /* Allows sections to fill available height */
+        }
+
+        .section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            flex: 1; /* Each section takes equal width */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section h2 {
+            margin-top: 0;
+            font-size: 1.5em;
+            color: #555;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ccc;
+            margin-bottom: 15px;
+        }
+
+        .user-list, .friend-list, .request-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto; /* Enable scrolling for lists */
+            flex-grow: 1; /* Allow list to take remaining height */
+        }
+
+        .user-item, .friend-item, .request-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            background-color: white;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .user-item:last-child, .friend-item:last-child, .request-item:last-child {
+            border-bottom: none;
+        }
+
+        .user-info span, .friend-info span, .request-info span {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .user-actions button, .friend-actions button, .request-actions button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 8px; /* Space between buttons */
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        /* Button Colors for Dashboard Main View */
+        .add-friend-btn-main { /* Renamed to avoid conflict with modal's add button */
+            background-color: #007bff; /* Blue */
+            color: white;
+        }
+        .add-friend-btn-main:hover {
+            background-color: #0069d9;
+            transform: translateY(-1px);
+        }
+
+        .chat-btn {
+            background-color: #28a745; /* Green */
+            color: white;
+        }
+        .chat-btn:hover {
+            background-color: #218838;
+            transform: translateY(-1px);
+        }
+
+        .remove-friend-btn {
+            background-color: #ffc107; /* Yellow for remove */
+            color: #333;
+        }
+        .remove-friend-btn:hover {
+            background-color: #e0a800;
+            transform: translateY(-1px);
+        }
+
+        /* Message Display Area (similar to other pages) */
+        #message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+            color: #333;
+            border: 1px solid transparent;
+        }
+
+        #message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+            opacity: 1;
+        }
+
+        #message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+            opacity: 1;
+        }
+
+        /* --- Manage Friends Modal Styles --- */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto; /* Centered */
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px; /* Increased width for modal */
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-height: 90vh; /* Limit height for scrollability */
+            overflow-y: auto; /* Enable scroll for content */
+        }
+
+        .close-button {
+            color: #aaa;
+            align-self: flex-end; /* Align to top right */
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .modal-section {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fcfcfc;
+        }
+
+        .modal-section h3 {
+            margin-top: 0;
+            color: #444;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 10px;
+        }
+
+        .modal-user-item, .modal-request-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px dashed #f0f0f0;
+            margin-bottom: 5px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 0px 1px rgba(0, 0, 0, 0.05);
+        }
+        .modal-user-item:last-child, .modal-request-item:last-child {
+            border-bottom: none;
+        }
+
+        .modal-actions button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            margin-left: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .send-request-btn {
+            background-color: #007bff; /* Blue */
+            color: white;
+        }
+        .send-request-btn:hover {
+            background-color: #0069d9;
+        }
+
+        .accept-request-btn {
+            background-color: #28a745; /* Green */
+            color: white;
+        }
+        .accept-request-btn:hover {
+            background-color: #218838;
+        }
+
+        .decline-request-btn {
+            background-color: #dc3545; /* Red */
+            color: white;
+        }
+        .decline-request-btn:hover {
+            background-color: #c82333;
+        }
+
+        .status-text {
+            font-size: 0.85em;
+            color: #666;
+            margin-left: 5px;
+        }
+
+        /* Responsive adjustments for modal */
+        @media (max-width: 600px) {
+            .modal-content {
+                width: 95%;
+                padding: 15px;
+            }
+            .modal-user-item, .modal-request-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .modal-actions {
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+            }
+            .modal-actions button {
+                margin-left: 0;
+                margin-top: 5px;
+                width: 48%; /* Adjust for small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1 id="welcomeMessage">Welcome, User!</h1>
+            <div class="header-buttons">
+                <button class="header-button manage-friends-btn" onclick="openManageFriendsModal()">Manage Friends</button>
+                <button class="header-button logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="dashboard-sections">
+            <!-- All Users Section (main dashboard) - Now only for informational display -->
+            <div class="section">
+                <h2>All Other Users (For Info)</h2>
+                <ul class="user-list" id="allUsersList">
+                    <!-- Users will be loaded here -->
+                </ul>
+            </div>
+
+            <!-- My Friends Section (main dashboard) -->
+            <div class="section">
+                <h2>My Friends</h2>
+                <ul class="friend-list" id="myFriendsList">
+                    <!-- Friends will be loaded here -->
+                </ul>
+            </div>
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <!-- The Manage Friends Modal -->
+    <div id="manageFriendsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeManageFriendsModal()">&times;</span>
+            <h2>Manage Friends & Requests</h2>
+
+            <!-- Section for sending new requests -->
+            <div class="modal-section">
+                <h3>Send Friend Request</h3>
+                <ul class="request-list" id="modalAllUsersList">
+                    <!-- Users to send requests to will be loaded here -->
+                </ul>
+            </div>
+
+            <!-- Section for incoming requests -->
+            <div class="modal-section">
+                <h3>Incoming Requests</h3>
+                <ul class="request-list" id="incomingRequestsList">
+                    <!-- Incoming requests will be loaded here -->
+                </ul>
+            </div>
+
+            <!-- Section for outgoing requests -->
+            <div class="modal-section">
+                <h3>Outgoing Requests</h3>
+                <ul class="request-list" id="outgoingRequestsList">
+                    <!-- Outgoing requests will be loaded here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:5000';
+        const loggedInUserId = sessionStorage.getItem('loggedInUserId');
+        const loggedInUsername = sessionStorage.getItem('loggedInUsername');
+        let currentUserFriends = []; // Stores IDs of current user's friends
+        let currentUserOutgoingRequests = []; // Stores IDs of users to whom current user sent requests
+        let currentUserIncomingRequests = []; // Stores IDs of users who sent requests to current user
+
+        // Redirect to login if not authenticated
+        if (!loggedInUserId || !loggedInUsername) {
+            window.location.href = '/index.html';
+        } else {
+            document.getElementById('welcomeMessage').textContent = `Welcome, ${loggedInUsername}!`;
+            loadDashboardData(); // Load initial dashboard data
+        }
+
+        // --- UI Display & Message Functions ---
+
+        /**
+         * Displays a message to the user with a specific style (success/error).
+         * @param {string} msg - The message to display.
+         * @param {string} type - 'success' or 'error' to determine styling.
+         */
+        function displayMessage(msg, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = msg;
+            messageDiv.className = '';
+            messageDiv.classList.add(type);
+            messageDiv.style.opacity = 1;
+            setTimeout(() => {
+                messageDiv.style.opacity = 0;
+            }, 5000);
+        }
+
+        // --- Data Loading Functions ---
+
+        /**
+         * Loads all necessary data for the dashboard: current user's friends and all other users.
+         * This is for the main dashboard view.
+         */
+        async function loadDashboardData() {
+            console.log('--- Loading Dashboard Data (Main View) ---');
+            await fetchFriends(); // Always fetch friends first
+            await fetchAllUsersForMainDashboard(); // Then fetch all users, using the friends list
+            console.log('--- Dashboard Data Loaded (Main View) ---');
+        }
+
+        /**
+         * Fetches and displays the current user's friends.
+         * Populates the 'My Friends' section.
+         */
+        async function fetchFriends() {
+            console.log(`Fetching friends for user: ${loggedInUserId}`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/friends/${loggedInUserId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const friends = await response.json();
+                currentUserFriends = friends.map(f => f.user_id); // Store only IDs for quick lookup
+                console.log('Current User Friends (IDs):', currentUserFriends);
+                displayFriends(friends);
+            } catch (error) {
+                console.error('Error fetching friends:', error);
+                displayMessage('Failed to load friends.', 'error');
+            }
+        }
+
+        /**
+         * Fetches and displays all other users for the main dashboard view.
+         * This list will only show users who are NOT yet friends.
+         */
+        async function fetchAllUsersForMainDashboard() {
+            console.log(`Fetching all other users for main dashboard: ${loggedInUserId}`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/users?current_user_id=${loggedInUserId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const users = await response.json();
+                // Filter users to only show those who are NOT yet friends
+                const nonFriendUsers = users.filter(user => !currentUserFriends.includes(user.user_id));
+                displayUsersForMainDashboard(nonFriendUsers);
+            } catch (error) {
+                console.error('Error fetching all users for main dashboard:', error);
+                displayMessage('Failed to load other users for main dashboard.', 'error');
+            }
+        }
+
+        /**
+         * Loads all data for the Manage Friends Modal: all users, incoming, and outgoing requests.
+         */
+        async function loadManageFriendsData() {
+            console.log('--- Loading Manage Friends Data ---');
+            await fetchFriends(); // Ensure friends list is updated for filtering
+            await fetchFriendRequests(); // Fetch incoming and outgoing requests
+            await fetchAllUsersForModal(); // Fetch all users for sending new requests
+            console.log('--- Manage Friends Data Loaded ---');
+        }
+
+        /**
+         * Fetches and stores incoming and outgoing friend requests.
+         */
+        async function fetchFriendRequests() {
+            console.log(`Fetching friend requests for user: ${loggedInUserId}`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/friends/requests/${loggedInUserId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const requests = await response.json();
+                currentUserIncomingRequests = requests.incoming;
+                currentUserOutgoingRequests = requests.outgoing;
+                console.log('Incoming Requests:', currentUserIncomingRequests);
+                console.log('Outgoing Requests:', currentUserOutgoingRequests);
+                displayIncomingRequests(currentUserIncomingRequests);
+                displayOutgoingRequests(currentUserOutgoingRequests);
+            } catch (error) {
+                console.error('Error fetching friend requests:', error);
+                displayMessage('Failed to load friend requests.', 'error');
+            }
+        }
+
+        /**
+         * Fetches all users for the modal's "Send Friend Request" section.
+         */
+        async function fetchAllUsersForModal() {
+            console.log(`Fetching all users for modal: ${loggedInUserId}`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/users?current_user_id=${loggedInUserId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const allUsers = await response.json();
+                // Filter users who are not already friends and do not have a pending outgoing/incoming request
+                const usersForRequest = allUsers.filter(user => {
+                    const isFriend = currentUserFriends.includes(user.user_id);
+                    const hasOutgoingRequest = currentUserOutgoingRequests.some(req => req.receiver_id === user.user_id);
+                    const hasIncomingRequest = currentUserIncomingRequests.some(req => req.sender_id === user.user_id);
+                    return !isFriend && !hasOutgoingRequest && !hasIncomingRequest;
+                });
+                displayUsersForModal(usersForRequest);
+            } catch (error) {
+                console.error('Error fetching all users for modal:', error);
+                displayMessage('Failed to load users for friend requests.', 'error');
+            }
+        }
+
+        // --- UI Rendering Functions ---
+
+        /**
+         * Displays the list of friends in the 'My Friends' section (main dashboard).
+         * @param {Array} friends - Array of friend objects.
+         */
+        function displayFriends(friends) {
+            const myFriendsList = document.getElementById('myFriendsList');
+            myFriendsList.innerHTML = '';
+            if (friends.length === 0) {
+                myFriendsList.innerHTML = '<li class="user-item">No friends yet.</li>';
+                return;
+            }
+            friends.forEach(friend => {
+                const li = document.createElement('li');
+                li.className = 'friend-item';
+                li.innerHTML = `
+                    <div class="friend-info">
+                        <span>${friend.username}</span>
+                    </div>
+                    <div class="friend-actions">
+                        <button class="chat-btn" onclick="startChat('${friend.user_id}', '${friend.username}')">Chat</button>
+                        <button class="remove-friend-btn" onclick="removeFriend('${friend.user_id}', '${friend.username}')">Remove</button>
+                    </div>
+                `;
+                myFriendsList.appendChild(li);
+            });
+        }
+
+        /**
+         * Displays users in the main dashboard's "All Other Users" section.
+         * Only displays non-friends, without an "Add Friend" button (now handled in modal).
+         * This section is purely informational now.
+         * @param {Array} users - Array of user objects who are NOT friends.
+         */
+        function displayUsersForMainDashboard(users) {
+            const allUsersList = document.getElementById('allUsersList');
+            allUsersList.innerHTML = '';
+            if (users.length === 0) {
+                allUsersList.innerHTML = '<li class="user-item">No other users currently.</li>';
+                return;
+            }
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.className = 'user-item';
+                li.innerHTML = `
+                    <div class="user-info">
+                        <span>${user.username}</span>
+                    </div>
+                    <div class="user-actions">
+                        <span class="status-text">Not a friend.</span>
+                    </div>
+                `;
+                allUsersList.appendChild(li);
+            });
+        }
+
+        /**
+         * Displays the list of all other users in the modal for sending friend requests.
+         * @param {Array} users - Array of user objects.
+         */
+        function displayUsersForModal(users) {
+            const modalAllUsersList = document.getElementById('modalAllUsersList');
+            modalAllUsersList.innerHTML = '';
+            if (users.length === 0) {
+                modalAllUsersList.innerHTML = '<li class="modal-user-item">No users available to send requests to.</li>';
+                return;
+            }
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.className = 'modal-user-item';
+                li.innerHTML = `
+                    <div class="user-info">
+                        <span>${user.username}</span>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="send-request-btn" onclick="sendFriendRequest('${user.user_id}', '${user.username}')">Send Request</button>
+                    </div>
+                `;
+                modalAllUsersList.appendChild(li);
+            });
+        }
+
+        /**
+         * Displays incoming friend requests in the modal.
+         * @param {Array} requests - Array of incoming request objects.
+         */
+        function displayIncomingRequests(requests) {
+            const incomingRequestsList = document.getElementById('incomingRequestsList');
+            incomingRequestsList.innerHTML = '';
+            if (requests.length === 0) {
+                incomingRequestsList.innerHTML = '<li class="modal-request-item">No incoming friend requests.</li>';
+                return;
+            }
+            requests.forEach(request => {
+                const li = document.createElement('li');
+                li.className = 'modal-request-item';
+                li.innerHTML = `
+                    <div class="request-info">
+                        <span>From: ${request.sender_username}</span>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="accept-request-btn" onclick="acceptFriendRequest('${request.request_id}', '${request.sender_username}')">Accept</button>
+                        <button class="decline-request-btn" onclick="declineFriendRequest('${request.request_id}', '${request.sender_username}')">Decline</button>
+                    </div>
+                `;
+                incomingRequestsList.appendChild(li);
+            });
+        }
+
+        /**
+         * Displays outgoing friend requests in the modal.
+         * @param {Array} requests - Array of outgoing request objects.
+         */
+        function displayOutgoingRequests(requests) {
+            const outgoingRequestsList = document.getElementById('outgoingRequestsList');
+            outgoingRequestsList.innerHTML = '';
+            if (requests.length === 0) {
+                outgoingRequestsList.innerHTML = '<li class="modal-request-item">No outgoing friend requests.</li>';
+                return;
+            }
+            requests.forEach(request => {
+                const li = document.createElement('li');
+                li.className = 'modal-request-item';
+                li.innerHTML = `
+                    <div class="request-info">
+                        <span>To: ${request.receiver_username}</span>
+                    </div>
+                    <div class="modal-actions">
+                        <span class="status-text">Pending...</span>
+                    </div>
+                `;
+                outgoingRequestsList.appendChild(li);
+            });
+        }
+
+        // --- Interaction Functions ---
+
+        /**
+         * Opens the Manage Friends modal and loads its data.
+         */
+        function openManageFriendsModal() {
+            document.getElementById('manageFriendsModal').style.display = 'flex';
+            loadManageFriendsData(); // Load data specifically for the modal
+        }
+
+        /**
+         * Closes the Manage Friends modal and refreshes main dashboard data.
+         */
+        function closeManageFriendsModal() {
+            document.getElementById('manageFriendsModal').style.display = 'none';
+            loadDashboardData(); // Refresh dashboard to show updated friend list
+        }
+
+        /**
+         * Sends a friend request to another user.
+         * @param {string} receiverId - The ID of the user to send the request to.
+         * @param {string} receiverUsername - The username of the user to send the request to.
+         */
+        async function sendFriendRequest(receiverId, receiverUsername) {
+            console.log(`Sending request from ${loggedInUsername} to ${receiverUsername}`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/friends/send_request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender_id: loggedInUserId,
+                        receiver_id: receiverId
+                    }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    displayMessage(`Friend request sent to ${receiverUsername}!`, 'success');
+                    loadManageFriendsData(); // Refresh modal data to update lists
+                } else {
+                    displayMessage(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error sending friend request:', error);
+                displayMessage('An error occurred while sending friend request.', 'error');
+            }
+        }
+
+        /**
+         * Accepts an incoming friend request.
+         * @param {string} requestId - The ID of the friend request to accept.
+         * @param {string} senderUsername - The username of the person who sent the request.
+         */
+        async function acceptFriendRequest(requestId, senderUsername) {
+            console.log(`Accepting request from ${senderUsername}`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/friends/accept_request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        request_id: requestId,
+                        acceptor_id: loggedInUserId // The current user is the acceptor
+                    }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    displayMessage(`Accepted ${senderUsername}'s friend request!`, 'success');
+                    loadManageFriendsData(); // Refresh modal data
+                } else {
+                    displayMessage(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error accepting friend request:', error);
+                displayMessage('An error occurred while accepting friend request.', 'error');
+            }
+        }
+
+        /**
+         * Declines an incoming friend request.
+         * @param {string} requestId - The ID of the friend request to decline.
+         * @param {string} senderUsername - The username of the person who sent the request.
+         */
+        async function declineFriendRequest(requestId, senderUsername) {
+            if (!confirm(`Are you sure you want to decline ${senderUsername}'s friend request?`)) {
+                return;
+            }
+            console.log(`Declining request from ${senderUsername}`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/friends/decline_request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        request_id: requestId,
+                        decliner_id: loggedInUserId // The current user is the decliner
+                    }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    displayMessage(`Declined ${senderUsername}'s friend request.`, 'success');
+                    loadManageFriendsData(); // Refresh modal data
+                } else {
+                    displayMessage(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error declining friend request:', error);
+                displayMessage('An error occurred while declining friend request.', 'error');
+            }
+        }
+
+        /**
+         * Sends a request to remove a friend. (Still used from main dashboard and possibly modal)
+         * @param {string} friendId - The ID of the user to remove from friends.
+         * @param {string} friendUsername - The username of the user to remove.
+         */
+        async function removeFriend(friendId, friendUsername) {
+            if (!confirm(`Are you sure you want to remove ${friendUsername} from your friends?`)) {
+                return;
+            }
+            console.log(`Attempting to remove friend: ${friendUsername} (${friendId})`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/friends/remove`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: loggedInUserId,
+                        friend_id: friendId
+                    }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    displayMessage(`Removed ${friendUsername} from friends.`, 'success');
+                    await loadDashboardData(); // Refresh dashboard main view
+                    if (document.getElementById('manageFriendsModal').style.display === 'flex') {
+                        loadManageFriendsData(); // Also refresh modal if open
+                    }
+                } else {
+                    displayMessage(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error removing friend:', error);
+                displayMessage('An error occurred while removing friend.', 'error');
+            }
+        }
+
+        /**
+         * Starts a chat with the selected friend.
+         * @param {string} friendId - The ID of the friend to chat with.
+         * @param {string} friendUsername - The username of the friend to chat with.
+         */
+        function startChat(friendId, friendUsername) {
+            sessionStorage.setItem('chattingWithId', friendId);
+            sessionStorage.setItem('chattingWithUsername', friendUsername);
+            window.location.href = '/chat.html';
+        }
+
+        /**
+         * Logs out the current user and redirects to the login page.
+         */
+        function logout() {
+            sessionStorage.removeItem('loggedInUserId');
+            sessionStorage.removeItem('loggedInUsername');
+            sessionStorage.removeItem('chattingWithId');
+            sessionStorage.removeItem('chattingWithUsername');
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html>

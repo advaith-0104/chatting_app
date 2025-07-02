@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App - Login/Signup</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        /* General Body Styling */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font as preferred */
+            background-color: #f0f2f5; /* Light grey background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Full viewport height */
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+
+        /* Container for forms */
+        .container {
+            background-color: #ffffff; /* White background for the container */
+            padding: 30px;
+            border-radius: 12px; /* Rounded corners */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+            width: 100%;
+            max-width: 450px; /* Max width for larger screens */
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* Heading Styles */
+        h1 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 2em;
+        }
+
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Form Grouping for Inputs */
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+            position: relative; /* For password toggle icon positioning */
+        }
+
+        /* Labels for Inputs */
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        /* Input Field Styling */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: calc(100% - 20px); /* Full width minus padding */
+            padding: 12px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px; /* Rounded corners for inputs */
+            font-size: 1em;
+            color: #333;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #007bff; /* Highlight on focus */
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        /* Password Toggle Icon */
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 60%; /* Adjust as needed to align with input */
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #999;
+            font-size: 0.9em;
+            padding: 5px;
+            border-radius: 5px;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: #555;
+        }
+
+        /* Button Styling */
+        button {
+            background-color: #007bff; /* Primary blue button */
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+            transform: translateY(-2px); /* Slight lift effect */
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Message Display Area */
+        #message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            opacity: 0; /* Initially hidden */
+            transition: opacity 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+            color: #333; /* Default text color */
+            border: 1px solid transparent; /* Default border */
+        }
+
+        #message.success {
+            background-color: #d4edda; /* Light green for success */
+            color: #155724; /* Dark green text */
+            border-color: #c3e6cb;
+            opacity: 1;
+        }
+
+        #message.error {
+            background-color: #f8d7da; /* Light red for error */
+            color: #721c24; /* Dark red text */
+            border-color: #f5c6cb;
+            opacity: 1;
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            h2 {
+                font-size: 1.3em;
+            }
+            button {
+                padding: 10px 15px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Chat App!</h1>
+
+        <h2>Register</h2>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="regEmail">Google Mail Address:</label>
+                <input type="email" id="regEmail" placeholder="your.email@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label for="regUsername">Username:</label>
+                <input type="text" id="regUsername" placeholder="Choose a username" required>
+            </div>
+            <div class="form-group">
+                <label for="regPassword">Password:</label>
+                <input type="password" id="regPassword" placeholder="Enter password" required>
+                <span class="password-toggle" onclick="togglePasswordVisibility('regPassword', this)">
+                    <i class="fa-solid fa-eye"></i>
+                </span>
+            </div>
+            <div class="form-group">
+                <label for="regConfirmPassword">Confirm Password:</label>
+                <input type="password" id="regConfirmPassword" placeholder="Confirm password" required>
+                <span class="password-toggle" onclick="togglePasswordVisibility('regConfirmPassword', this)">
+                    <i class="fa-solid fa-eye"></i>
+                </span>
+            </div>
+            <button type="submit">Register</button>
+        </form>
+
+        <h2>Login</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginEmail">Google Mail Address:</label>
+                <input type="email" id="loginEmail" placeholder="your.email@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Password:</label>
+                <input type="password" id="loginPassword" placeholder="Enter password" required>
+                <span class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)">
+                    <i class="fa-solid fa-eye"></i>
+                </span>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:5000'; // Make sure this matches your Flask server address
+
+        /**
+         * Displays a message to the user with a specific style (success/error).
+         * @param {string} msg - The message to display.
+         * @param {string} type - 'success' or 'error' to determine styling.
+         */
+        function displayMessage(msg, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = msg;
+            messageDiv.className = ''; // Clear existing classes
+            messageDiv.classList.add(type); // Add new type class
+            messageDiv.style.opacity = 1; // Make visible
+            setTimeout(() => {
+                messageDiv.style.opacity = 0; // Fade out after 5 seconds
+            }, 5000);
+        }
+
+        /**
+         * Toggles the visibility of a password input field.
+         * Changes input type between 'password' and 'text' and updates the eye icon.
+         * @param {string} inputId - The ID of the password input field.
+         * @param {HTMLElement} toggleIconElement - The span element containing the eye icon.
+         */
+        function togglePasswordVisibility(inputId, toggleIconElement) {
+            const passwordInput = document.getElementById(inputId);
+            const icon = toggleIconElement.querySelector('i');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash'); // Closed eye icon
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye'); // Open eye icon
+            }
+        }
+
+        /**
+         * Handles user registration by sending data to the backend.
+         * @param {Event} event - The form submission event.
+         */
+        async function registerUser(event) {
+            event.preventDefault(); // Prevent default form submission (page refresh)
+
+            const email = document.getElementById('regEmail').value;
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email,
+                        username,
+                        password,
+                        confirm_password: confirmPassword
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayMessage(data.message, 'success');
+                    // Optionally clear fields after successful registration
+                    document.getElementById('regEmail').value = '';
+                    document.getElementById('regUsername').value = '';
+                    document.getElementById('regPassword').value = '';
+                    document.getElementById('regConfirmPassword').value = '';
+                } else {
+                    displayMessage(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error during registration:', error);
+                displayMessage('An error occurred during registration. Please try again.', 'error');
+            }
+        }
+
+        /**
+         * Handles user login by sending data to the backend.
+         * Stores user_id and username in sessionStorage upon successful login.
+         * @param {Event} event - The form submission event.
+         */
+        async function loginUser(event) {
+            event.preventDefault(); // Prevent default form submission (page refresh)
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayMessage(data.message, 'success');
+                    // Store user info in sessionStorage for access across pages
+                    sessionStorage.setItem('loggedInUserId', data.user_id);
+                    sessionStorage.setItem('loggedInUsername', data.username);
+                    console.log('Login successful, redirecting to dashboard...');
+                    // Redirect to the dashboard page
+                    window.location.href = 'dashboard.html';
+                } else {
+                    displayMessage(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error during login:', error);
+                displayMessage('An error occurred during login. Please try again.', 'error');
+            }
+        }
+
+        // Attach event listeners after the DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('registerForm').addEventListener('submit', registerUser);
+            document.getElementById('loginForm').addEventListener('submit', loginUser);
+        });
+    </script>
+</body>
+</html>
