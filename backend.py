@@ -10,36 +10,21 @@ import sys
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 
-# --- Helper function for PyInstaller to find ALL bundled resources ---
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller.
-        This function is designed to correctly locate files that are bundled
-        INSIDE the executable by PyInstaller, which are extracted to a temp folder.
-    """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        # For development, use the current directory
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
-
 # --- Firebase Initialization ---
-# The serviceAccountKey.json is bundled *inside* the executable,
-# so we must use resource_path to find its temporary extraction location.
-SERVICE_ACCOUNT_KEY_PATH = resource_path('serviceAccountKey.json')
+# For Render deployment, the service account key is mounted as a secret file
+# at /etc/secrets/firebase_service_account_key.json
+FIREBASE_SERVICE_ACCOUNT_KEY_PATH = "/etc/secrets/firebase_service_account_key.json"
 
-# Initialize Firebase Admin SDK
 try:
-    cred = credentials.Certificate(SERVICE_ACCOUNT_KEY_PATH)
+    # Initialize Firebase Admin SDK using the secure path on Render
+    cred = credentials.Certificate(FIREBASE_SERVICE_ACCOUNT_KEY_PATH)
     firebase_admin.initialize_app(cred)
     db = firestore.client() # Get a Firestore client
     print("Firebase Admin SDK initialized successfully.")
 except Exception as e:
+    # Log the error but do not sys.exit(1) as Render handles service restarts
     print(f"Error initializing Firebase Admin SDK: {e}")
-    print(f"Please ensure '{SERVICE_ACCOUNT_KEY_PATH}' is correctly bundled and accessible.")
-    # Exit if Firebase cannot be initialized, as the app won't function
-    sys.exit(1)
+    print(f"Please ensure '{FIREBASE_SERVICE_ACCOUNT_KEY_PATH}' is correctly configured as a secret file on Render.")
 
 
 # --- Flask Application Setup ---
@@ -51,13 +36,15 @@ CORS(app) # Enable CORS for frontend communication during development
 
 @app.route('/')
 def serve_index():
-    """Serves the main index.html file. Uses resource_path for bundled read-only files."""
-    return send_from_directory(resource_path('.'), 'index.html')
+    """Serves the main index.html file."""
+    # For Render, static files are served from the current directory
+    return send_from_directory(os.getcwd(), 'index.html')
 
 @app.route('/<path:path>')
 def serve_static_files(path):
-    """Serves other static files (e.g., dashboard.html, chat.html). Uses resource_path for bundled read-only files."""
-    return send_from_directory(resource_path('.'), path)
+    """Serves other static files (e.g., dashboard.html, chat.html)."""
+    # For Render, static files are served from the current directory
+    return send_from_directory(os.getcwd(), path)
 
 @app.route('/register', methods=['POST'])
 def register_user():
@@ -402,6 +389,7 @@ def remove_friend():
             return jsonify({"message": "User is not in your friend list."}), 400
 
         # Remove friend from user's list
+        # CORRECTED: Changed ArrayUnion to ArrayRemove and receiver_id to friend_id
         db.collection('users').document(user_id).update({
             'friends': firestore.ArrayRemove([friend_id])
         })
@@ -491,5 +479,4 @@ def send_message():
         return jsonify({"message": "An error occurred while sending message."}), 500
 
 if __name__ == '__main__':
-    print(f"Firebase key path: {SERVICE_ACCOUNT_KEY_PATH}")
     app.run(debug=True, port=5000)
