@@ -404,7 +404,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://127.0.0.1:5000';
+        const API_BASE_URL = 'https://chatting-app-e4if.onrender.com';
         const loggedInUserId = sessionStorage.getItem('loggedInUserId');
         const loggedInUsername = sessionStorage.getItem('loggedInUsername');
         let currentUserFriends = []; // Stores IDs of current user's friends
@@ -769,9 +769,7 @@
          * @param {string} senderUsername - The username of the person who sent the request.
          */
         async function declineFriendRequest(requestId, senderUsername) {
-            if (!confirm(`Are you sure you want to decline ${senderUsername}'s friend request?`)) {
-                return;
-            }
+            // Removed confirm() as it doesn't work in Render iframe
             console.log(`Declining request from ${senderUsername}`);
             try {
                 const response = await fetch(`${API_BASE_URL}/friends/decline_request`, {
@@ -801,9 +799,7 @@
          * @param {string} friendUsername - The username of the user to remove.
          */
         async function removeFriend(friendId, friendUsername) {
-            if (!confirm(`Are you sure you want to remove ${friendUsername} from your friends?`)) {
-                return;
-            }
+            // Removed confirm() as it doesn't work in Render iframe
             console.log(`Attempting to remove friend: ${friendUsername} (${friendId})`);
             try {
                 const response = await fetch(`${API_BASE_URL}/friends/remove`, {
