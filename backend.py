@@ -13,7 +13,7 @@ from firebase_admin import credentials, firestore, auth
 # --- Firebase Initialization ---
 # For Render deployment, the service account key is mounted as a secret file
 # at /etc/secrets/firebase_service_account_key.json
-FIREBASE_SERVICE_ACCOUNT_KEY_PATH = "firebase_service_acCount_key.json"
+FIREBASE_SERVICE_ACCOUNT_KEY_PATH = "firebase_service_account_key.json"
 
 try:
     # Initialize Firebase Admin SDK using the secure path on Render
