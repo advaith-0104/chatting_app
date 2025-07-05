@@ -177,6 +177,31 @@
             background-color: #5a6268;
         }
 
+        /* Notification Badge Styling */
+        .friend-name-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Space between name and badge */
+        }
+
+        .notification-badge {
+            background-color: #dc3545; /* Red color */
+            color: white;
+            border-radius: 50%; /* Circular shape */
+            padding: 4px 8px; /* Adjust padding for size */
+            font-size: 0.75em;
+            font-weight: bold;
+            min-width: 20px; /* Ensure minimum width for single digits */
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .notification-badge:hover {
+            transform: scale(1.1);
+        }
+
+
         /* Responsive adjustments */
         @media (max-width: 600px) {
             .dashboard-container {
@@ -289,7 +314,27 @@
         }
 
         /**
-         * Loads and displays the current user's friends.
+         * Fetches unread counts from the backend.
+         * @returns {Object} An object where keys are friend IDs and values are unread counts.
+         */
+        async function getUnreadCounts() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/get_unread_counts/${loggedInUserId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.unread_counts || {};
+                } else {
+                    console.error('Failed to fetch unread counts:', response.status, response.statusText);
+                    return {};
+                }
+            } catch (error) {
+                console.error('Error fetching unread counts:', error);
+                return {};
+            }
+        }
+
+        /**
+         * Loads and displays the current user's friends with unread counts.
          */
         async function loadFriends() {
             try {
@@ -299,13 +344,26 @@
                 friendsList.innerHTML = ''; // Clear existing list
                 currentFriends.clear(); // Clear previous friends set
 
+                // Fetch unread counts
+                const unreadCounts = await getUnreadCounts();
+
                 if (data.friends && data.friends.length > 0) {
                     data.friends.forEach(friend => {
                         currentFriends.add(friend.id); // Add friend ID to set
                         const li = document.createElement('li');
                         li.className = 'user-list-item';
+                        
+                        const unreadCount = unreadCounts[friend.id] || 0;
+                        let notificationBadge = '';
+                        if (unreadCount > 0) {
+                            notificationBadge = `<span class="notification-badge">${unreadCount}</span>`;
+                        }
+
                         li.innerHTML = `
-                            <span>${friend.username}</span>
+                            <div class="friend-name-wrapper">
+                                <span>${friend.username}</span>
+                                ${notificationBadge}
+                            </div>
                             <div>
                                 <button onclick="startChat('${friend.id}', '${friend.username}')">Chat</button>
                                 <button class="remove-friend" onclick="removeFriend('${friend.id}', '${friend.username}')">Remove</button>
