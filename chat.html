@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat App - Chat</title>
+    <title>Chat with Friend</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         body {
@@ -24,11 +24,13 @@
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 700px;
+            max-width: 600px;
             display: flex;
             flex-direction: column;
             gap: 15px;
             min-height: 80vh;
+            max-height: 95vh;
+            overflow: hidden; /* Prevent container scrollbar */
         }
 
         .chat-header {
@@ -45,126 +47,119 @@
             font-size: 1.5em;
             color: #007bff;
             cursor: pointer;
-            transition: color 0.3s ease;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background-color 0.2s ease;
         }
 
         .chat-header .back-button:hover {
-            color: #0056b3;
+            background-color: #e9e9e9;
         }
 
         .chat-header h1 {
             margin: 0;
             font-size: 1.8em;
             color: #333;
+            flex-grow: 1; /* Allows title to take available space */
+            text-align: center; /* Center the title */
+        }
+
+        .messages-area {
             flex-grow: 1;
-            text-align: center; /* Center the chatting partner's name */
-        }
-
-        .messages-box {
-            flex-grow: 1; /* Allows messages to take up available space */
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
-            overflow-y: auto; /* Enable scrolling */
+            overflow-y: auto; /* Enable scrolling for messages */
+            padding-right: 10px; /* Space for scrollbar */
             display: flex;
-            flex-direction: column; /* Stack messages vertically */
-            gap: 10px; /* Space between messages */
-            background-color: #f8f9fa;
-        }
-
-        .message-item {
-            display: flex;
-            max-width: 80%; /* Limit message bubble width */
-            word-wrap: break-word; /* Ensure long words wrap */
-            white-space: pre-wrap; /* Preserve whitespace and allow wrapping */
+            flex-direction: column;
+            gap: 10px;
         }
 
         .message-bubble {
+            max-width: 80%; /* Limit bubble width */
             padding: 10px 15px;
-            border-radius: 20px; /* More rounded corners for bubbles */
-            position: relative;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 18px;
+            line-height: 1.4;
+            word-wrap: break-word; /* Ensure long words break */
         }
 
-        .message-bubble .timestamp {
+        .message-bubble.sent {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end; /* Align to right for sent messages */
+            border-bottom-right-radius: 4px; /* Pointy corner */
+        }
+
+        .message-bubble.received {
+            background-color: #e9e9eb;
+            color: #333;
+            align-self: flex-start; /* Align to left for received messages */
+            border-bottom-left-radius: 4px; /* Pointy corner */
+        }
+
+        .message-timestamp {
             font-size: 0.75em;
             color: #666;
             margin-top: 5px;
-            text-align: right; /* Timestamp aligned to end of bubble */
-            display: block; /* Ensures timestamp is on new line */
+            display: block;
+            text-align: right;
+            opacity: 0.8;
         }
 
-        .message-item.sent {
-            justify-content: flex-end; /* Align sent messages to the right */
-            align-self: flex-end; /* Pushes the entire bubble to the right */
+        .message-bubble.received .message-timestamp {
+            text-align: left;
         }
 
-        .message-item.sent .message-bubble {
-            background-color: #dcf8c6; /* Light green for sent messages */
-            color: #333;
-            border-bottom-right-radius: 5px; /* Tapered corner for sent */
-        }
-
-        .message-item.received {
-            justify-content: flex-start; /* Align received messages to the left */
-            align-self: flex-start; /* Pushes the entire bubble to the left */
-        }
-
-        .message-item.received .message-bubble {
-            background-color: #ffffff; /* White for received messages */
-            color: #333;
-            border-bottom-left-radius: 5px; /* Tapered corner for received */
-        }
-
-        /* Styling for Date Headers */
         .date-header {
             text-align: center;
-            margin: 15px 0 5px 0;
-            font-size: 0.85em;
+            margin: 20px 0 10px;
             color: #777;
-            position: sticky; /* Makes it stick while scrolling */
-            top: 0; /* Sticks to the top of the messages-box */
-            background-color: #f8f9fa; /* Background to prevent content showing through */
+            font-size: 0.9em;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            background-color: #ffffff;
             padding: 5px 0;
-            z-index: 1; /* Ensure it's above messages */
+            z-index: 10;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        .message-input-area {
+        .input-area {
             display: flex;
             gap: 10px;
             padding-top: 15px;
             border-top: 1px solid #eee;
         }
 
-        .message-input-area textarea {
+        .input-area input[type="text"] {
             flex-grow: 1;
-            padding: 10px 15px;
+            padding: 12px 15px;
             border: 1px solid #ccc;
-            border-radius: 8px;
+            border-radius: 25px; /* Rounded input field */
             font-size: 1em;
-            resize: vertical; /* Allow vertical resizing */
-            min-height: 40px; /* Minimum height for textarea */
-            max-height: 100px; /* Max height to prevent excessive resizing */
+            box-sizing: border-box;
         }
 
-        .message-input-area button {
-            background-color: #28a745;
+        .input-area button {
+            background-color: #28a745; /* Green for send button */
             color: white;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border: none;
-            border-radius: 8px;
+            border-radius: 25px; /* Rounded button */
             cursor: pointer;
-            font-size: 1em;
+            font-size: 1.1em;
             transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .message-input-area button:hover {
+        .input-area button:hover {
             background-color: #218838;
         }
 
         /* Message Display Area (for success/error messages) */
         #message {
-            margin-top: 20px;
+            margin-top: 10px;
             padding: 10px;
             border-radius: 8px;
             font-weight: bold;
@@ -195,14 +190,14 @@
                 min-height: 95vh;
             }
             .chat-header h1 {
-                font-size: 1.5em;
+                font-size: 1.6em;
             }
-            .message-input-area {
-                flex-direction: column;
+            .input-area input[type="text"] {
+                padding: 10px 12px;
             }
-            .message-input-area button {
-                width: 100%;
-                padding: 12px;
+            .input-area button {
+                padding: 10px 15px;
+                font-size: 1em;
             }
         }
     </style>
@@ -214,13 +209,13 @@
             <h1 id="chattingWithUsername">Chatting with...</h1>
         </div>
 
-        <div class="messages-box" id="messagesBox">
-            <!-- Messages will be loaded here -->
+        <div class="messages-area" id="messagesArea">
+            <!-- Chat messages will be loaded here -->
         </div>
 
-        <div class="message-input-area">
-            <textarea id="messageInput" placeholder="Type your message..." rows="1"></textarea>
-            <button onclick="sendMessage()">Send</button>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Type your message...">
+            <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
         </div>
 
         <div id="message"></div>
@@ -228,30 +223,22 @@
 
     <script>
         const API_BASE_URL = 'https://chatting-app-e4if.onrender.com';
-        const loggedInUserId = sessionStorage.getItem('loggedInUserId');
-        const loggedInUsername = sessionStorage.getItem('loggedInUsername');
-        const chattingWithId = sessionStorage.getItem('chattingWithId');
-        const chattingWithUsername = sessionStorage.getItem('chattingWithUsername');
-
-        let messageFetchInterval; // Variable to hold the interval ID
+        // Changed from sessionStorage to localStorage
+        const loggedInUserId = localStorage.getItem('loggedInUserId');
+        const loggedInUsername = localStorage.getItem('loggedInUsername');
+        const chattingWithId = localStorage.getItem('chattingWithId');
+        const chattingWithUsername = localStorage.getItem('chattingWithUsername');
 
         // Redirect to login if not authenticated or no chat partner selected
         if (!loggedInUserId || !loggedInUsername || !chattingWithId || !chattingWithUsername) {
-            // FIX: Use full API_BASE_URL for navigation
-            window.location.href = `${API_BASE_URL}/index.html`;
+            window.location.href = `${API_BASE_URL}/index.html`; // Use absolute URL
         } else {
             document.getElementById('chattingWithUsername').textContent = `Chatting with ${chattingWithUsername}`;
-            loadChatHistory(); // Load initial chat history
-            // Set up interval to fetch new messages every 3 seconds
-            messageFetchInterval = setInterval(loadChatHistory, 3000);
+            loadChatHistory();
+            // Auto-scroll to bottom on load
+            const messagesArea = document.getElementById('messagesArea');
+            messagesArea.scrollTop = messagesArea.scrollHeight;
         }
-
-        // Clear interval when leaving the page
-        window.onbeforeunload = function() {
-            if (messageFetchInterval) {
-                clearInterval(messageFetchInterval);
-            }
-        };
 
         /**
          * Displays a message to the user with a specific style (success/error).
@@ -270,111 +257,86 @@
         }
 
         /**
-         * Loads chat history between the current user and the chatting partner.
+         * Formats a timestamp into a readable time string.
+         * @param {string} timestampString - The timestamp string from Firestore.
+         * @returns {string} Formatted time (e.g., "10:30 AM").
+         */
+        function formatTime(timestampString) {
+            const date = new Date(timestampString);
+            let hours = date.getHours();
+            const minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            const strMinutes = minutes < 10 ? '0' + minutes : minutes;
+            return `${hours}:${strMinutes} ${ampm}`;
+        }
+
+        /**
+         * Formats a date for the date header.
+         * @param {Date} date - The date object.
+         * @returns {string} Formatted date (e.g., "Today", "Yesterday", "Jul 5, 2025").
+         */
+        function formatDateHeader(date) {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+
+            if (date.toDateString() === today.toDateString()) {
+                return 'Today';
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                return 'Yesterday';
+            } else {
+                const options = { month: 'short', day: 'numeric', year: 'numeric' };
+                return date.toLocaleDateString('en-US', options);
+            }
+        }
+
+        /**
+         * Loads and displays chat history.
          */
         async function loadChatHistory() {
             try {
                 const response = await fetch(`${API_BASE_URL}/chat_history/${loggedInUserId}/${chattingWithId}`);
                 const messages = await response.json();
-                displayMessages(messages);
+                const messagesArea = document.getElementById('messagesArea');
+                messagesArea.innerHTML = ''; // Clear existing messages
+
+                let lastDate = null;
+
+                if (messages && messages.length > 0) {
+                    messages.forEach(msg => {
+                        const messageDate = new Date(msg.timestamp._seconds * 1000 + msg.timestamp._nanoseconds / 1000000);
+                        const currentDateString = messageDate.toDateString();
+
+                        if (currentDateString !== lastDate) {
+                            const dateHeader = document.createElement('div');
+                            dateHeader.className = 'date-header';
+                            dateHeader.textContent = formatDateHeader(messageDate);
+                            messagesArea.appendChild(dateHeader);
+                            lastDate = currentDateString;
+                        }
+
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = `message-bubble ${msg.sender_id === loggedInUserId ? 'sent' : 'received'}`;
+                        messageDiv.innerHTML = `
+                            ${msg.message}
+                            <span class="message-timestamp">${formatTime(msg.timestamp._seconds * 1000 + msg.timestamp._nanoseconds / 1000000)}</span>
+                        `;
+                        messagesArea.appendChild(messageDiv);
+                    });
+                    messagesArea.scrollTop = messagesArea.scrollHeight; // Scroll to bottom
+                } else {
+                    messagesArea.innerHTML = '<div class="message-bubble received">Start a conversation!</div>';
+                }
             } catch (error) {
                 console.error('Error loading chat history:', error);
-                // displayMessage('Failed to load chat history.', 'error'); // Avoid constant error popups during auto-refresh
+                displayMessage('Failed to load chat history.', 'error');
             }
         }
 
         /**
-         * Helper function to check if two dates are the same day (ignoring time).
-         * @param {Date} d1 - First Date object.
-         * @param {Date} d2 - Second Date object.
-         * @returns {boolean} True if they are the same day, false otherwise.
-         */
-        function isSameDay(d1, d2) {
-            return d1.getFullYear() === d2.getFullYear() &&
-                   d1.getMonth() === d2.getMonth() &&
-                   d1.getDate() === d2.getDate();
-        }
-
-        /**
-         * Displays messages in the chat box with date grouping and scrolls to the bottom.
-         * @param {Array} messages - Array of message objects.
-         */
-        function displayMessages(messages) {
-            const messagesBox = document.getElementById('messagesBox');
-            const shouldScroll = messagesBox.scrollTop + messagesBox.clientHeight === messagesBox.scrollHeight;
-            
-            messagesBox.innerHTML = ''; // Clear previous messages
-
-            let lastDisplayedDate = null; // To keep track of the date of the last message displayed
-            const today = new Date(); // Current date for 'Today' comparison
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1); // Date for 'Yesterday' comparison
-
-            // Sort messages by timestamp to ensure correct grouping
-            messages.sort((a, b) => {
-                // Parse timestamp strings into Date objects for comparison
-                const dateA = new Date(a.timestamp);
-                const dateB = new Date(b.timestamp);
-                return dateA.getTime() - dateB.getTime(); // Compare using milliseconds
-            });
-
-            messages.forEach(msg => {
-                let messageDate = null;
-                if (msg.timestamp) { // Check if timestamp string exists
-                    messageDate = new Date(msg.timestamp); // Directly parse the string
-                }
-
-                // --- Date Grouping Logic ---
-                // Ensure messageDate is a valid Date object before proceeding with grouping
-                if (messageDate && !isNaN(messageDate.getTime()) && (!lastDisplayedDate || !isSameDay(messageDate, lastDisplayedDate))) {
-                    const dateHeader = document.createElement('div');
-                    dateHeader.className = 'date-header';
-                    let headerText = '';
-
-                    if (isSameDay(messageDate, today)) {
-                        headerText = 'Today';
-                    } else if (isSameDay(messageDate, yesterday)) {
-                        headerText = 'Yesterday';
-                    } else {
-                        // Format for older dates: e.g., "Jul 3, 2025"
-                        const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-                        headerText = messageDate.toLocaleDateString(undefined, dateOptions);
-                    }
-                    dateHeader.textContent = headerText;
-                    messagesBox.appendChild(dateHeader);
-                    lastDisplayedDate = messageDate; // Update the last displayed date
-                }
-                // --- End Date Grouping Logic ---
-
-                const li = document.createElement('div');
-                li.className = `message-item ${msg.sender_id === loggedInUserId ? 'sent' : 'received'}`;
-                
-                let formattedTime = '';
-                if (messageDate && !isNaN(messageDate.getTime())) { // Ensure messageDate is a valid Date object
-                    // Only format time for individual message bubbles
-                    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true }; // e.g., 10:30 PM
-                    formattedTime = messageDate.toLocaleTimeString(undefined, timeOptions);
-                } else {
-                    formattedTime = 'Time N/A'; // Fallback
-                }
-
-                li.innerHTML = `
-                    <div class="message-bubble">
-                        ${msg.message}
-                        <span class="timestamp">${formattedTime}</span>
-                    </div>
-                `;
-                messagesBox.appendChild(li);
-            });
-
-            // Auto-scroll to bottom if user was already at the bottom or if it's the first load
-            if (shouldScroll || messagesBox.children.length === messages.length) {
-                messagesBox.scrollTop = messagesBox.scrollHeight;
-            }
-        }
-
-        /**
-         * Sends a new message to the chatting partner.
+         * Sends a message to the current chat partner.
          */
         async function sendMessage() {
             const messageInput = document.getElementById('messageInput');
@@ -400,10 +362,9 @@
                 const data = await response.json();
                 if (response.ok) {
                     messageInput.value = ''; // Clear input field
-                    loadChatHistory(); // Reload chat to display new message
-                    // Explicitly scroll after sending message
-                    const messagesBox = document.getElementById('messagesBox');
-                    messagesBox.scrollTop = messagesBox.scrollHeight;
+                    // Instead of full reload, just add the new message to the UI
+                    // For simplicity, we'll still reload for now, but real-time update is better
+                    loadChatHistory(); // Reloads history to show new message and maintain order
                 } else {
                     displayMessage(data.message, 'error');
                 }
@@ -413,21 +374,22 @@
             }
         }
 
-        // Allow sending message on Enter key press
-        document.getElementById('messageInput').addEventListener('keypress', function(event) {
-            if (event.key === 'Enter' && !event.shiftKey) { // Shift+Enter for new line
-                event.preventDefault(); // Prevent default Enter behavior (new line)
-                sendMessage();
-            }
-        });
-
         /**
          * Navigates back to the dashboard.
          */
         function goBack() {
-            // FIX: Use full API_BASE_URL for navigation
-            window.location.href = `${API_BASE_URL}/dashboard.html`;
+            // Optional: Clear chattingWithId and chattingWithUsername from localStorage if desired
+            // localStorage.removeItem('chattingWithId');
+            // localStorage.removeItem('chattingWithUsername');
+            window.location.href = `${API_BASE_URL}/dashboard.html`; // Use absolute URL
         }
+
+        // Send message on Enter key press
+        document.getElementById('messageInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
     </script>
 </body>
 </html>

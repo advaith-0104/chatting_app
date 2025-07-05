@@ -3,166 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat App - Login/Signup</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <title>Chat App - Login/Register</title>
     <style>
-        /* General Body Styling */
         body {
-            font-family: 'Inter', sans-serif; /* Using Inter font as preferred */
-            background-color: #f0f2f5; /* Light grey background */
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* Full viewport height */
+            min-height: 100vh;
             margin: 0;
             padding: 20px;
-            box-sizing: border-box; /* Include padding in element's total width and height */
-        }
-
-        /* Container for forms */
-        .container {
-            background-color: #ffffff; /* White background for the container */
-            padding: 30px;
-            border-radius: 12px; /* Rounded corners */
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
-            width: 100%;
-            max-width: 450px; /* Max width for larger screens */
-            text-align: center;
             box-sizing: border-box;
         }
-
-        /* Heading Styles */
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
         h1 {
             color: #333;
             margin-bottom: 25px;
             font-size: 2em;
         }
-
-        h2 {
-            color: #555;
-            margin-top: 30px;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        /* Form Grouping for Inputs */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-align: left;
-            position: relative; /* For password toggle icon positioning */
         }
-
-        /* Labels for Inputs */
         label {
             display: block;
             margin-bottom: 8px;
-            color: #666;
-            font-weight: bold;
+            color: #555;
+            font-weight: 500;
         }
-
-        /* Input Field Styling */
         input[type="text"],
         input[type="email"],
         input[type="password"] {
-            width: calc(100% - 20px); /* Full width minus padding */
+            width: calc(100% - 20px);
             padding: 12px 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px; /* Rounded corners for inputs */
+            border: 1px solid #ccc;
+            border-radius: 8px;
             font-size: 1em;
-            color: #333;
             box-sizing: border-box;
-            transition: border-color 0.3s ease;
         }
-
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus {
-            border-color: #007bff; /* Highlight on focus */
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-        }
-
-        /* Password Toggle Icon */
-        .password-toggle {
-            position: absolute;
-            right: 10px;
-            top: 60%; /* Adjust as needed to align with input */
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #999;
-            font-size: 0.9em;
-            padding: 5px;
-            border-radius: 5px;
-            transition: color 0.3s ease;
-        }
-
-        .password-toggle:hover {
-            color: #555;
-        }
-
-        /* Button Styling */
         button {
-            background-color: #007bff; /* Primary blue button */
+            background-color: #007bff;
             color: white;
             padding: 12px 20px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-size: 1.1em;
-            font-weight: bold;
             width: 100%;
             margin-top: 10px;
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            transition: background-color 0.3s ease;
         }
-
         button:hover {
-            background-color: #0056b3; /* Darker blue on hover */
-            transform: translateY(-2px); /* Slight lift effect */
+            background-color: #0056b3;
         }
-
-        button:active {
-            transform: translateY(0);
+        .toggle-link {
+            margin-top: 20px;
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.95em;
         }
-
-        /* Message Display Area */
+        .toggle-link:hover {
+            color: #0056b3;
+        }
         #message {
             margin-top: 20px;
             padding: 10px;
             border-radius: 8px;
             font-weight: bold;
-            opacity: 0; /* Initially hidden */
+            opacity: 0;
             transition: opacity 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-            color: #333; /* Default text color */
-            border: 1px solid transparent; /* Default border */
+            color: #333;
+            border: 1px solid transparent;
         }
-
         #message.success {
-            background-color: #d4edda; /* Light green for success */
-            color: #155724; /* Dark green text */
+            background-color: #d4edda;
+            color: #155724;
             border-color: #c3e6cb;
             opacity: 1;
         }
-
         #message.error {
-            background-color: #f8d7da; /* Light red for error */
-            color: #721c24; /* Dark red text */
+            background-color: #f8d7da;
+            color: #721c24;
             border-color: #f5c6cb;
             opacity: 1;
         }
+        .hidden {
+            display: none;
+        }
 
-        /* Responsive adjustments for smaller screens */
+        /* Responsive adjustments */
         @media (max-width: 600px) {
             .container {
-                margin: 10px;
                 padding: 20px;
             }
             h1 {
                 font-size: 1.8em;
             }
-            h2 {
-                font-size: 1.3em;
+            input[type="text"],
+            input[type="email"],
+            input[type="password"] {
+                padding: 10px;
             }
             button {
                 padding: 10px 15px;
@@ -173,57 +123,55 @@
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to Chat App!</h1>
+        <h1 id="formTitle">Login</h1>
 
-        <h2>Register</h2>
-        <form id="registerForm">
+        <div id="loginForm">
             <div class="form-group">
-                <label for="regEmail">Google Mail Address:</label>
-                <input type="email" id="regEmail" placeholder="your.email@gmail.com" required>
-            </div>
-            <div class="form-group">
-                <label for="regUsername">Username:</label>
-                <input type="text" id="regUsername" placeholder="Choose a username" required>
-            </div>
-            <div class="form-group">
-                <label for="regPassword">Password:</label>
-                <input type="password" id="regPassword" placeholder="Enter password" required>
-                <span class="password-toggle" onclick="togglePasswordVisibility('regPassword', this)">
-                    <i class="fa-solid fa-eye"></i>
-                </span>
-            </div>
-            <div class="form-group">
-                <label for="regConfirmPassword">Confirm Password:</label>
-                <input type="password" id="regConfirmPassword" placeholder="Confirm password" required>
-                <span class="password-toggle" onclick="togglePasswordVisibility('regConfirmPassword', this)">
-                    <i class="fa-solid fa-eye"></i>
-                </span>
-            </div>
-            <button type="submit">Register</button>
-        </form>
-
-        <h2>Login</h2>
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="loginEmail">Google Mail Address:</label>
-                <input type="email" id="loginEmail" placeholder="your.email@gmail.com" required>
+                <label for="loginEmail">Email:</label>
+                <input type="email" id="loginEmail" placeholder="Enter your email">
             </div>
             <div class="form-group">
                 <label for="loginPassword">Password:</label>
-                <input type="password" id="loginPassword" placeholder="Enter password" required>
-                <span class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)">
-                    <i class="fa-solid fa-eye"></i>
-                </span>
+                <input type="password" id="loginPassword" placeholder="Enter your password">
             </div>
-            <button type="submit">Login</button>
-        </form>
+            <button onclick="loginUser()">Login</button>
+            <p class="toggle-link" onclick="toggleForm()">Don't have an account? Register here.</p>
+        </div>
+
+        <div id="registerForm" class="hidden">
+            <div class="form-group">
+                <label for="registerUsername">Username:</label>
+                <input type="text" id="registerUsername" placeholder="Choose a username">
+            </div>
+            <div class="form-group">
+                <label for="registerEmail">Email:</label>
+                <input type="email" id="registerEmail" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">Password:</label>
+                <input type="password" id="registerPassword" placeholder="Enter a password (min 6 chars)">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password:</label>
+                <input type="password" id="confirmPassword" placeholder="Confirm your password">
+            </div>
+            <button onclick="registerUser()">Register</button>
+            <p class="toggle-link" onclick="toggleForm()">Already have an account? Login here.</p>
+        </div>
 
         <div id="message"></div>
     </div>
 
     <script>
-        // Changed API_BASE_URL to point to your live Render application URL
-        const API_BASE_URL = 'https://chatting-app-e4if.onrender.com'; 
+        const API_BASE_URL = 'https://chatting-app-e4if.onrender.com';
+
+        // Check if user is already logged in (persisted in localStorage)
+        const storedUserId = localStorage.getItem('loggedInUserId');
+        const storedUsername = localStorage.getItem('loggedInUsername');
+        if (storedUserId && storedUsername) {
+            // If user data exists in localStorage, redirect directly to dashboard
+            window.location.href = `${API_BASE_URL}/dashboard.html`;
+        }
 
         /**
          * Displays a message to the user with a specific style (success/error).
@@ -233,46 +181,43 @@
         function displayMessage(msg, type) {
             const messageDiv = document.getElementById('message');
             messageDiv.textContent = msg;
-            messageDiv.className = ''; // Clear existing classes
-            messageDiv.classList.add(type); // Add new type class
-            messageDiv.style.opacity = 1; // Make visible
+            messageDiv.className = '';
+            messageDiv.classList.add(type);
+            messageDiv.style.opacity = 1;
             setTimeout(() => {
-                messageDiv.style.opacity = 0; // Fade out after 5 seconds
+                messageDiv.style.opacity = 0;
             }, 5000);
         }
 
         /**
-         * Toggles the visibility of a password input field.
-         * Changes input type between 'password' and 'text' and updates the eye icon.
-         * @param {string} inputId - The ID of the password input field.
-         * @param {HTMLElement} toggleIconElement - The span element containing the eye icon.
+         * Toggles between login and registration forms.
          */
-        function togglePasswordVisibility(inputId, toggleIconElement) {
-            const passwordInput = document.getElementById(inputId);
-            const icon = toggleIconElement.querySelector('i');
+        function toggleForm() {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const formTitle = document.getElementById('formTitle');
 
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash'); // Closed eye icon
+            if (loginForm.classList.contains('hidden')) {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                formTitle.textContent = 'Login';
             } else {
-                passwordInput.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye'); // Open eye icon
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                formTitle.textContent = 'Register';
             }
+            // Clear any previous messages
+            document.getElementById('message').style.opacity = 0;
         }
 
         /**
-         * Handles user registration by sending data to the backend.
-         * @param {Event} event - The form submission event.
+         * Handles user registration.
          */
-        async function registerUser(event) {
-            event.preventDefault(); // Prevent default form submission (page refresh)
-
-            const email = document.getElementById('regEmail').value;
-            const username = document.getElementById('regUsername').value;
-            const password = document.getElementById('regPassword').value;
-            const confirmPassword = document.getElementById('regConfirmPassword').value;
+        async function registerUser() {
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
 
             try {
                 const response = await fetch(`${API_BASE_URL}/register`, {
@@ -280,40 +225,30 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        email,
-                        username,
-                        password,
-                        confirm_password: confirmPassword
-                    }),
+                    body: JSON.stringify({ username, email, password, confirm_password: confirmPassword }),
                 });
-
                 const data = await response.json();
-
                 if (response.ok) {
                     displayMessage(data.message, 'success');
-                    // Optionally clear fields after successful registration
-                    document.getElementById('regEmail').value = '';
-                    document.getElementById('regUsername').value = '';
-                    document.getElementById('regPassword').value = '';
-                    document.getElementById('regConfirmPassword').value = '';
+                    toggleForm(); // Switch to login form after successful registration
+                    // Clear registration form fields
+                    document.getElementById('registerUsername').value = '';
+                    document.getElementById('registerEmail').value = '';
+                    document.getElementById('registerPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
                 } else {
                     displayMessage(data.message, 'error');
                 }
             } catch (error) {
                 console.error('Error during registration:', error);
-                displayMessage('An error occurred during registration. Please try again.', 'error');
+                displayMessage('An error occurred during registration.', 'error');
             }
         }
 
         /**
-         * Handles user login by sending data to the backend.
-         * Stores user_id and username in sessionStorage upon successful login.
-         * @param {Event} event - The form submission event.
+         * Handles user login.
          */
-        async function loginUser(event) {
-            event.preventDefault(); // Prevent default form submission (page refresh)
-
+        async function loginUser() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
 
@@ -325,31 +260,21 @@
                     },
                     body: JSON.stringify({ email, password }),
                 });
-
                 const data = await response.json();
-
                 if (response.ok) {
                     displayMessage(data.message, 'success');
-                    // Store user info in sessionStorage for access across pages
-                    sessionStorage.setItem('loggedInUserId', data.user_id);
-                    sessionStorage.setItem('loggedInUsername', data.username);
-                    console.log('Login successful, redirecting to dashboard...');
-                    // Redirect to the dashboard page
-                    window.location.href = 'dashboard.html';
+                    // Store user ID and username in localStorage for persistence
+                    localStorage.setItem('loggedInUserId', data.user_id);
+                    localStorage.setItem('loggedInUsername', data.username);
+                    window.location.href = `${API_BASE_URL}/dashboard.html`; // Redirect to dashboard
                 } else {
                     displayMessage(data.message, 'error');
                 }
             } catch (error) {
                 console.error('Error during login:', error);
-                displayMessage('An error occurred during login. Please try again.', 'error');
+                displayMessage('An error occurred during login.', 'error');
             }
         }
-
-        // Attach event listeners after the DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('registerForm').addEventListener('submit', registerUser);
-            document.getElementById('loginForm').addEventListener('submit', loginUser);
-        });
     </script>
 </body>
 </html>

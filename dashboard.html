@@ -237,8 +237,9 @@
 
     <script>
         const API_BASE_URL = 'https://chatting-app-e4if.onrender.com';
-        const loggedInUserId = sessionStorage.getItem('loggedInUserId');
-        const loggedInUsername = sessionStorage.getItem('loggedInUsername');
+        // Changed from sessionStorage to localStorage
+        const loggedInUserId = localStorage.getItem('loggedInUserId');
+        const loggedInUsername = localStorage.getItem('loggedInUsername');
 
         let allOtherUsers = []; // Store all other users for client-side filtering
         let currentFriends = new Set(); // To store IDs of current friends
@@ -553,8 +554,9 @@
          * @param {string} friendUsername - The username of the friend to chat with.
          */
         function startChat(friendId, friendUsername) {
-            sessionStorage.setItem('chattingWithId', friendId);
-            sessionStorage.setItem('chattingWithUsername', friendUsername);
+            // Changed from sessionStorage to localStorage
+            localStorage.setItem('chattingWithId', friendId);
+            localStorage.setItem('chattingWithUsername', friendUsername);
             window.location.href = `${API_BASE_URL}/chat.html`; // Use absolute URL
         }
 
@@ -572,7 +574,8 @@
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    sessionStorage.clear(); // Clear all session storage
+                    // Changed from sessionStorage.clear() to localStorage.clear()
+                    localStorage.clear(); // Clear all localStorage
                     window.location.href = `${API_BASE_URL}/index.html`; // Use absolute URL
                 } else {
                     displayMessage(data.message, 'error');
