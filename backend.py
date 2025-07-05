@@ -1,7 +1,7 @@
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone # Import timezone
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sys
@@ -447,32 +447,25 @@ def get_unread_counts(user_id):
             last_read_doc_ref = db.collection('user_chat_metadata').document(user_id).collection('chat_partners').document(friend_id)
             last_read_doc = last_read_doc_ref.get()
             
-            last_read_timestamp = None
+            # Initialize last_read_timestamp to a very old but valid datetime
+            # This ensures that if no last_read_timestamp is found, all messages will be counted as unread.
+            last_read_timestamp_dt = datetime(1, 1, 1, tzinfo=timezone.utc) # Year 1, Jan 1, UTC
+            
             if last_read_doc.exists:
                 last_read_timestamp_data = last_read_doc.to_dict().get('last_read_timestamp')
-                if last_read_timestamp_data:
-                    # Convert Firestore Timestamp object to datetime for comparison
-                    last_read_timestamp = last_read_timestamp_data.timestamp() # Get Unix timestamp (seconds)
-                else:
-                    # If document exists but timestamp is missing, treat as no messages read
-                    last_read_timestamp = datetime.min.timestamp() # Effectively start of time
-            else:
-                # If no metadata document exists, user has read nothing in this chat
-                last_read_timestamp = datetime.min.timestamp() # Effectively start of time
-
+                if last_read_timestamp_data and isinstance(last_read_timestamp_data, firestore.Timestamp):
+                    last_read_timestamp_dt = last_read_timestamp_data.astimezone(timezone.utc) # Convert to datetime object in UTC
+            
             # Query messages in this chat sent by the friend
-            # that are newer than the last_read_timestamp
+            # that are newer than the last_read_timestamp_dt
             messages_query = db.collection('chats').document(chat_id).collection('messages') \
                 .where('sender_id', '==', friend_id) \
+                .where('timestamp', '>', last_read_timestamp_dt) \
                 .order_by('timestamp') # Ensure ordering for comparison
 
             unread_count = 0
             for msg_doc in messages_query.stream():
-                msg_data = msg_doc.to_dict()
-                msg_timestamp = msg_data['timestamp'].timestamp() # Get Unix timestamp (seconds)
-                
-                if last_read_timestamp is None or msg_timestamp > last_read_timestamp:
-                    unread_count += 1
+                unread_count += 1
             
             unread_counts[friend_id] = unread_count
 
@@ -491,7 +484,9 @@ def get_chat_history(user1_id, user2_id):
     """
     chat_id = '_'.join(sorted([user1_id, user2_id]))
     messages = []
-    latest_message_timestamp = firestore.SERVER_TIMESTAMP # Default if no messages
+    
+    # Initialize latest_message_timestamp to a very old but valid datetime
+    latest_message_timestamp_dt = datetime(1, 1, 1, tzinfo=timezone.utc) # Year 1, Jan 1, UTC
 
     try:
         messages_ref = db.collection('chats').document(chat_id).collection('messages').order_by('timestamp').stream()
@@ -499,13 +494,19 @@ def get_chat_history(user1_id, user2_id):
             msg_data = msg_doc.to_dict()
             messages.append(msg_data)
             # Keep track of the latest message timestamp
-            latest_message_timestamp = msg_data['timestamp']
+            # Ensure it's a Firestore Timestamp object for setting
+            if isinstance(msg_data['timestamp'], firestore.Timestamp):
+                latest_message_timestamp_dt = msg_data['timestamp']
+            else:
+                # If it's not a Firestore Timestamp, convert it (e.g., if it's a Python datetime)
+                latest_message_timestamp_dt = firestore.Timestamp.from_datetime(msg_data['timestamp'].astimezone(timezone.utc))
+
 
         # Update the last_read_timestamp for user1 in their chat metadata with user2
         # Path: user_chat_metadata/{user1_id}/chat_partners/{user2_id}
         user1_chat_metadata_ref = db.collection('user_chat_metadata').document(user1_id).collection('chat_partners').document(user2_id)
         user1_chat_metadata_ref.set({
-            'last_read_timestamp': latest_message_timestamp
+            'last_read_timestamp': latest_message_timestamp_dt
         }, merge=True) # Use merge=True to create if not exists, or update if exists
 
         return jsonify(messages), 200
