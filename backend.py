@@ -9,7 +9,6 @@ import sys
 # Import Firebase Admin SDK components
 import firebase_admin
 from firebase_admin import credentials, firestore
-from google.cloud.firestore import Timestamp # <--- THIS IS THE CRITICAL CHANGE
 from firebase_admin import auth
 
 
@@ -20,7 +19,7 @@ FIREBASE_SERVICE_ACCOUNT_KEY_PATH = "firebase_service_account_key.json"
 
 try:
     # Initialize Firebase Admin SDK using the secure path on Render
-    cred = credentials.Certificate(FIREBASE_SERVICE_ACCOUNT_KEY_PATH)
+    cred = credentials.Certificate(FIREBASE_SERVICE_ACCOUNT_KEY_PATH) # <--- THIS IS THE CORRECTED LINE
     firebase_admin.initialize_app(cred)
     db = firestore.client() # Get a Firestore client
     print("Firebase Admin SDK initialized successfully.")
@@ -118,7 +117,7 @@ def login_user():
         user_data = user_doc.to_dict()
         user_id = user_doc.id
 
-        # Directly check password (as per user request - caution: less secure than Firebase Auth direct client-side login)
+        # Directly check password (as per user request - caution: less secure than production)
         if user_data.get('password_for_backend_check') != password:
             return jsonify({"message": "Invalid email or password."}), 401
 
@@ -456,7 +455,7 @@ def get_unread_counts(user_id):
             
             if last_read_doc.exists:
                 last_read_timestamp_data = last_read_doc.to_dict().get('last_read_timestamp')
-                if last_read_timestamp_data and isinstance(last_read_timestamp_data, Timestamp): # Use imported Timestamp
+                if last_read_timestamp_data and isinstance(last_read_timestamp_data, db.Timestamp): # Use db.Timestamp
                     last_read_timestamp_dt = last_read_timestamp_data.astimezone(timezone.utc) # Convert to datetime object in UTC
             
             # Query messages in this chat sent by the friend
@@ -498,11 +497,11 @@ def get_chat_history(user1_id, user2_id):
             messages.append(msg_data)
             # Keep track of the latest message timestamp
             # Ensure it's a Firestore Timestamp object for setting
-            if isinstance(msg_data['timestamp'], Timestamp): # Use imported Timestamp
+            if isinstance(msg_data['timestamp'], db.Timestamp): # Use db.Timestamp
                 latest_message_timestamp_dt = msg_data['timestamp']
             else:
                 # If it's not a Firestore Timestamp, convert it (e.g., if it's a Python datetime)
-                latest_message_timestamp_dt = Timestamp.from_datetime(msg_data['timestamp'].astimezone(timezone.utc))
+                latest_message_timestamp_dt = db.Timestamp.from_datetime(msg_data['timestamp'].astimezone(timezone.utc)) # Use db.Timestamp.from_datetime
 
 
         # Update the last_read_timestamp for user1 in their chat metadata with user2
@@ -569,4 +568,4 @@ def logout_user():
     return jsonify({"message": "Logged out successfully!"}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=50)
