@@ -116,6 +116,19 @@
             border-bottom-left-radius: 5px; /* Tapered corner for received */
         }
 
+        /* Styling for Date Headers */
+        .date-header {
+            text-align: center;
+            margin: 15px 0 5px 0;
+            font-size: 0.85em;
+            color: #777;
+            position: sticky; /* Makes it stick while scrolling */
+            top: 0; /* Sticks to the top of the messages-box */
+            background-color: #f8f9fa; /* Background to prevent content showing through */
+            padding: 5px 0;
+            z-index: 1; /* Ensure it's above messages */
+        }
+
         .message-input-area {
             display: flex;
             gap: 10px;
@@ -270,49 +283,89 @@
         }
 
         /**
-         * Displays messages in the chat box and scrolls to the bottom.
+         * Helper function to check if two dates are the same day (ignoring time).
+         * @param {Date} d1 - First Date object.
+         * @param {Date} d2 - Second Date object.
+         * @returns {boolean} True if they are the same day, false otherwise.
+         */
+        function isSameDay(d1, d2) {
+            return d1.getFullYear() === d2.getFullYear() &&
+                   d1.getMonth() === d2.getMonth() &&
+                   d1.getDate() === d2.getDate();
+        }
+
+        /**
+         * Displays messages in the chat box with date grouping and scrolls to the bottom.
          * @param {Array} messages - Array of message objects.
          */
         function displayMessages(messages) {
             const messagesBox = document.getElementById('messagesBox');
-            const shouldScroll = messagesBox.scrollTop + messagesBox.clientHeight === messagesBox.scrollHeight; // Check if already at bottom before adding new messages
+            const shouldScroll = messagesBox.scrollTop + messagesBox.clientHeight === messagesBox.scrollHeight;
+            
+            messagesBox.innerHTML = ''; // Clear previous messages
 
-            messagesBox.innerHTML = ''; // Clear previous messages to avoid duplicates
+            let lastDisplayedDate = null; // To keep track of the date of the last message displayed
+            const today = new Date(); // Current date for 'Today' comparison
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1); // Date for 'Yesterday' comparison
+
+            // Sort messages by timestamp to ensure correct grouping
+            messages.sort((a, b) => {
+                const tsA = a.timestamp && a.timestamp._seconds ? a.timestamp._seconds : 0;
+                const tsB = b.timestamp && b.timestamp._seconds ? b.timestamp._seconds : 0;
+                return tsA - tsB;
+            });
+
             messages.forEach(msg => {
+                let messageDate = null;
+                if (msg.timestamp && msg.timestamp._seconds) {
+                    messageDate = new Date(msg.timestamp._seconds * 1000);
+                }
+
+                // --- Date Grouping Logic ---
+                if (messageDate && (!lastDisplayedDate || !isSameDay(messageDate, lastDisplayedDate))) {
+                    const dateHeader = document.createElement('div');
+                    dateHeader.className = 'date-header';
+                    let headerText = '';
+
+                    if (isSameDay(messageDate, today)) {
+                        headerText = 'Today';
+                    } else if (isSameDay(messageDate, yesterday)) {
+                        headerText = 'Yesterday';
+                    } else {
+                        // Format for older dates: e.g., "Jul 3, 2025"
+                        const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+                        headerText = messageDate.toLocaleDateString(undefined, dateOptions);
+                    }
+                    dateHeader.textContent = headerText;
+                    messagesBox.appendChild(dateHeader);
+                    lastDisplayedDate = messageDate; // Update the last displayed date
+                }
+                // --- End Date Grouping Logic ---
+
                 const li = document.createElement('div');
                 li.className = `message-item ${msg.sender_id === loggedInUserId ? 'sent' : 'received'}`;
                 
-                // --- START OF CHANGES FOR TIMESTAMP ---
-                let formattedTimestamp = '';
-                if (msg.timestamp && msg.timestamp._seconds) {
-                    // Create a Date object from Firestore's seconds timestamp
-                    const date = new Date(msg.timestamp._seconds * 1000);
-
-                    // Options for formatting date and time
-                    const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+                let formattedTime = '';
+                if (messageDate) {
+                    // Only format time for individual message bubbles
                     const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true }; // e.g., 10:30 PM
-
-                    // Format date and time
-                    const datePart = date.toLocaleDateString(undefined, dateOptions);
-                    const timePart = date.toLocaleTimeString(undefined, timeOptions);
-
-                    formattedTimestamp = `${datePart} ${timePart}`;
+                    formattedTime = messageDate.toLocaleTimeString(undefined, timeOptions);
                 } else {
-                    formattedTimestamp = 'Timestamp N/A'; // Fallback if timestamp is missing or malformed
+                    formattedTime = 'Time N/A'; // Fallback
                 }
-                // --- END OF CHANGES FOR TIMESTAMP ---
 
                 li.innerHTML = `
                     <div class="message-bubble">
                         ${msg.message}
-                        <span class="timestamp">${formattedTimestamp}</span>
+                        <span class="timestamp">${formattedTime}</span>
                     </div>
                 `;
                 messagesBox.appendChild(li);
             });
 
             // Auto-scroll to bottom if user was already at the bottom or if it's the first load
-            if (shouldScroll || messagesBox.children.length === messages.length) { // Second condition for initial load
+            if (shouldScroll || messagesBox.children.length === messages.length) {
                 messagesBox.scrollTop = messagesBox.scrollHeight;
             }
         }
