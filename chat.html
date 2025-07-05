@@ -237,7 +237,8 @@
 
         // Redirect to login if not authenticated or no chat partner selected
         if (!loggedInUserId || !loggedInUsername || !chattingWithId || !chattingWithUsername) {
-            window.location.href = '/index.html';
+            // FIX: Use full API_BASE_URL for navigation
+            window.location.href = `${API_BASE_URL}/index.html`;
         } else {
             document.getElementById('chattingWithUsername').textContent = `Chatting with ${chattingWithUsername}`;
             loadChatHistory(); // Load initial chat history
@@ -311,19 +312,21 @@
 
             // Sort messages by timestamp to ensure correct grouping
             messages.sort((a, b) => {
-                const tsA = a.timestamp && a.timestamp._seconds ? a.timestamp._seconds : 0;
-                const tsB = b.timestamp && b.timestamp._seconds ? b.timestamp._seconds : 0;
-                return tsA - tsB;
+                // Parse timestamp strings into Date objects for comparison
+                const dateA = new Date(a.timestamp);
+                const dateB = new Date(b.timestamp);
+                return dateA.getTime() - dateB.getTime(); // Compare using milliseconds
             });
 
             messages.forEach(msg => {
                 let messageDate = null;
-                if (msg.timestamp && msg.timestamp._seconds) {
-                    messageDate = new Date(msg.timestamp._seconds * 1000);
+                if (msg.timestamp) { // Check if timestamp string exists
+                    messageDate = new Date(msg.timestamp); // Directly parse the string
                 }
 
                 // --- Date Grouping Logic ---
-                if (messageDate && (!lastDisplayedDate || !isSameDay(messageDate, lastDisplayedDate))) {
+                // Ensure messageDate is a valid Date object before proceeding with grouping
+                if (messageDate && !isNaN(messageDate.getTime()) && (!lastDisplayedDate || !isSameDay(messageDate, lastDisplayedDate))) {
                     const dateHeader = document.createElement('div');
                     dateHeader.className = 'date-header';
                     let headerText = '';
@@ -347,7 +350,7 @@
                 li.className = `message-item ${msg.sender_id === loggedInUserId ? 'sent' : 'received'}`;
                 
                 let formattedTime = '';
-                if (messageDate) {
+                if (messageDate && !isNaN(messageDate.getTime())) { // Ensure messageDate is a valid Date object
                     // Only format time for individual message bubbles
                     const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true }; // e.g., 10:30 PM
                     formattedTime = messageDate.toLocaleTimeString(undefined, timeOptions);
@@ -422,7 +425,8 @@
          * Navigates back to the dashboard.
          */
         function goBack() {
-            window.location.href = '/dashboard.html';
+            // FIX: Use full API_BASE_URL for navigation
+            window.location.href = `${API_BASE_URL}/dashboard.html`;
         }
     </script>
 </body>
