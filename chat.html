@@ -214,7 +214,6 @@
     </div>
 
     <script>
-        // Corrected API_BASE_URL: removed extra dot at the end
         const API_BASE_URL = 'https://chatting-app-e4if.onrender.com';
         const loggedInUserId = sessionStorage.getItem('loggedInUserId');
         const loggedInUsername = sessionStorage.getItem('loggedInUsername');
@@ -283,12 +282,30 @@
                 const li = document.createElement('div');
                 li.className = `message-item ${msg.sender_id === loggedInUserId ? 'sent' : 'received'}`;
                 
-                const timestamp = msg.timestamp ? new Date(msg.timestamp._seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                // --- START OF CHANGES FOR TIMESTAMP ---
+                let formattedTimestamp = '';
+                if (msg.timestamp && msg.timestamp._seconds) {
+                    // Create a Date object from Firestore's seconds timestamp
+                    const date = new Date(msg.timestamp._seconds * 1000);
+
+                    // Options for formatting date and time
+                    const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+                    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true }; // e.g., 10:30 PM
+
+                    // Format date and time
+                    const datePart = date.toLocaleDateString(undefined, dateOptions);
+                    const timePart = date.toLocaleTimeString(undefined, timeOptions);
+
+                    formattedTimestamp = `${datePart} ${timePart}`;
+                } else {
+                    formattedTimestamp = 'Timestamp N/A'; // Fallback if timestamp is missing or malformed
+                }
+                // --- END OF CHANGES FOR TIMESTAMP ---
 
                 li.innerHTML = `
                     <div class="message-bubble">
                         ${msg.message}
-                        <span class="timestamp">${timestamp}</span>
+                        <span class="timestamp">${formattedTimestamp}</span>
                     </div>
                 `;
                 messagesBox.appendChild(li);
