@@ -178,8 +178,8 @@ def get_friends(user_id):
         print(f"Error getting friends for {user_id}: {e}")
         return jsonify({"message": "Failed to load friends."}), 500
 
-# NEW: Send Friend Request
-@app.route('/friends/send_request', methods=['POST'])
+# MODIFIED: Changed route to match frontend expectation
+@app.route('/send_friend_request', methods=['POST']) # Changed from /friends/send_request
 def send_friend_request():
     """Sends a friend request from sender_id to receiver_id."""
     data = request.json
