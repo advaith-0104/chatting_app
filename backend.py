@@ -1,14 +1,17 @@
 import json
 import os
 import uuid
-from datetime import datetime, timezone # Import timezone
+from datetime import datetime, timezone
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sys
 
 # Import Firebase Admin SDK components
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, firestore
+from google.cloud.firestore import Timestamp # <--- THIS IS THE CRITICAL CHANGE
+from firebase_admin import auth
+
 
 # --- Firebase Initialization ---
 # For Render deployment, the service account key is mounted as a secret file
@@ -453,7 +456,7 @@ def get_unread_counts(user_id):
             
             if last_read_doc.exists:
                 last_read_timestamp_data = last_read_doc.to_dict().get('last_read_timestamp')
-                if last_read_timestamp_data and isinstance(last_read_timestamp_data, firestore.Timestamp):
+                if last_read_timestamp_data and isinstance(last_read_timestamp_data, Timestamp): # Use imported Timestamp
                     last_read_timestamp_dt = last_read_timestamp_data.astimezone(timezone.utc) # Convert to datetime object in UTC
             
             # Query messages in this chat sent by the friend
@@ -495,11 +498,11 @@ def get_chat_history(user1_id, user2_id):
             messages.append(msg_data)
             # Keep track of the latest message timestamp
             # Ensure it's a Firestore Timestamp object for setting
-            if isinstance(msg_data['timestamp'], firestore.Timestamp):
+            if isinstance(msg_data['timestamp'], Timestamp): # Use imported Timestamp
                 latest_message_timestamp_dt = msg_data['timestamp']
             else:
                 # If it's not a Firestore Timestamp, convert it (e.g., if it's a Python datetime)
-                latest_message_timestamp_dt = firestore.Timestamp.from_datetime(msg_data['timestamp'].astimezone(timezone.utc))
+                latest_message_timestamp_dt = Timestamp.from_datetime(msg_data['timestamp'].astimezone(timezone.utc))
 
 
         # Update the last_read_timestamp for user1 in their chat metadata with user2
