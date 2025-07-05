@@ -130,10 +130,11 @@ def login_user():
         print(f"Error during login: {e}")
         return jsonify({"message": "An error occurred during login. Please try again."}), 500
 
-@app.route('/users', methods=['GET'])
-def get_all_users():
+# MODIFIED: Changed route to accept user_id as a path parameter
+@app.route('/users/<user_id>', methods=['GET'])
+def get_all_users(user_id): # user_id is now passed as an argument
     """Returns a list of all registered users (excluding the current user)."""
-    current_user_id = request.args.get('current_user_id')
+    # current_user_id = request.args.get('current_user_id') # No longer needed, as it's in path
     users_list = []
     try:
         users_ref = db.collection('users')
@@ -141,12 +142,13 @@ def get_all_users():
 
         for user_doc in users:
             user_data = user_doc.to_dict()
-            if user_doc.id != current_user_id:
+            # Use the user_id from the path parameter for filtering
+            if user_doc.id != user_id: 
                 users_list.append({
-                    "user_id": user_doc.id,
+                    "id": user_doc.id, # Changed to 'id' to match frontend expectation
                     "username": user_data['username']
                 })
-        return jsonify(users_list), 200
+        return jsonify({"users": users_list}), 200 # Wrapped in 'users' key as frontend expects
     except Exception as e:
         print(f"Error getting all users: {e}")
         return jsonify({"message": "Failed to load users."}), 500
@@ -168,10 +170,10 @@ def get_friends(user_id):
             if friend_info_doc.exists:
                 friend_info_data = friend_info_doc.to_dict()
                 friend_usernames.append({
-                    "user_id": friend_info_doc.id,
+                    "id": friend_info_doc.id, # Changed to 'id' to match frontend expectation
                     "username": friend_info_data['username']
                 })
-        return jsonify(friend_usernames), 200
+        return jsonify({"friends": friend_usernames}), 200 # Wrapped in 'friends' key as frontend expects
     except Exception as e:
         print(f"Error getting friends for {user_id}: {e}")
         return jsonify({"message": "Failed to load friends."}), 500
@@ -240,8 +242,8 @@ def send_friend_request():
         print(f"Error sending friend request: {e}")
         return jsonify({"message": "An error occurred while sending friend request."}), 500
 
-# NEW: Get Friend Requests (Incoming and Outgoing)
-@app.route('/friends/requests/<user_id>', methods=['GET'])
+# MODIFIED: Changed route to match frontend expectation
+@app.route('/friend_requests/<user_id>', methods=['GET']) # Changed from /friends/requests/<user_id>
 def get_friend_requests(user_id):
     """Retrieves all incoming and outgoing friend requests for a given user."""
     incoming_requests = []
@@ -270,94 +272,93 @@ def get_friend_requests(user_id):
             })
 
         return jsonify({
-            "incoming": incoming_requests,
+            "requests": incoming_requests, # Changed to 'requests' key as frontend expects incoming requests
             "outgoing": outgoing_requests
         }), 200
     except Exception as e:
         print(f"Error getting friend requests for {user_id}: {e}")
         return jsonify({"message": "Failed to load friend requests."}), 500
 
-# NEW: Accept Friend Request
-@app.route('/friends/accept_request', methods=['POST'])
+# NEW: Accept Friend Request (frontend expects to send sender_id, not request_id)
+@app.route('/accept_friend_request', methods=['POST'])
 def accept_friend_request():
     """Accepts a friend request and establishes mutual friendship."""
     data = request.json
-    request_id = data.get('request_id')
-    acceptor_id = data.get('acceptor_id') # The user accepting the request
+    requester_id = data.get('requester_id') # The sender of the request
+    accepter_id = data.get('accepter_id') # The user accepting the request (current user)
 
-    if not all([request_id, acceptor_id]):
-        return jsonify({"message": "Request ID and acceptor ID are required."}), 400
+    if not all([requester_id, accepter_id]):
+        return jsonify({"message": "Requester ID and accepter ID are required."}), 400
+
+    if requester_id == accepter_id:
+        return jsonify({"message": "Cannot accept request from yourself."}), 400
 
     try:
-        request_doc_ref = db.collection('friend_requests').document(request_id)
-        request_doc = request_doc_ref.get()
+        # Find the pending request
+        request_query = db.collection('friend_requests') \
+            .where('sender_id', '==', requester_id) \
+            .where('receiver_id', '==', accepter_id) \
+            .where('status', '==', 'pending') \
+            .limit(1).get()
 
-        if not request_doc.exists:
-            return jsonify({"message": "Friend request not found."}), 404
+        if not request_query:
+            return jsonify({"message": "Pending friend request not found."}), 404
 
+        request_doc = request_query[0]
+        request_doc_ref = request_doc.reference
         request_data = request_doc.to_dict()
-        sender_id = request_data['sender_id']
-        receiver_id = request_data['receiver_id']
-
-        # Ensure the acceptor is the actual receiver of the request
-        if acceptor_id != receiver_id:
-            return jsonify({"message": "You are not authorized to accept this request."}), 403
-        
-        # Ensure the request is still pending
-        if request_data.get('status') != 'pending':
-            return jsonify({"message": "This friend request is no longer pending."}), 400
 
         # Update request status
         request_doc_ref.update({"status": "accepted", "accepted_at": firestore.SERVER_TIMESTAMP})
 
         # Add each user to the other's friends list (mutual friendship)
-        db.collection('users').document(sender_id).update({
-            'friends': firestore.ArrayUnion([receiver_id])
+        db.collection('users').document(requester_id).update({
+            'friends': firestore.ArrayUnion([accepter_id])
         })
-        db.collection('users').document(receiver_id).update({
-            'friends': firestore.ArrayUnion([sender_id])
+        db.collection('users').document(accepter_id).update({
+            'friends': firestore.ArrayUnion([requester_id])
         })
 
-        print(f"Friend request {request_id} accepted between {sender_id} and {receiver_id}.")
+        print(f"Friend request accepted between {requester_id} and {accepter_id}.")
         return jsonify({"message": "Friend request accepted!"}), 200
 
     except Exception as e:
         print(f"Error accepting friend request: {e}")
         return jsonify({"message": "An error occurred while accepting friend request."}), 500
 
-# NEW: Decline Friend Request
-@app.route('/friends/decline_request', methods=['POST'])
+# NEW: Decline Friend Request (frontend expects to send sender_id, not request_id)
+@app.route('/decline_friend_request', methods=['POST'])
 def decline_friend_request():
     """Declines a friend request."""
     data = request.json
-    request_id = data.get('request_id')
-    decliner_id = data.get('decliner_id') # The user declining the request
+    requester_id = data.get('requester_id') # The sender of the request
+    decliner_id = data.get('decliner_id') # The user declining the request (current user)
 
-    if not all([request_id, decliner_id]):
-        return jsonify({"message": "Request ID and decliner ID are required."}), 400
+    if not all([requester_id, decliner_id]):
+        return jsonify({"message": "Requester ID and decliner ID are required."}), 400
+
+    if requester_id == decliner_id:
+        return jsonify({"message": "Cannot decline request from yourself."}), 400
 
     try:
-        request_doc_ref = db.collection('friend_requests').document(request_id)
-        request_doc = request_doc_ref.get()
+        # Find the pending request
+        request_query = db.collection('friend_requests') \
+            .where('sender_id', '==', requester_id) \
+            .where('receiver_id', '==', decliner_id) \
+            .where('status', '==', 'pending') \
+            .limit(1).get()
 
-        if not request_doc.exists:
-            return jsonify({"message": "Friend request not found."}), 404
+        if not request_query:
+            return jsonify({"message": "Pending friend request not found."}), 404
 
+        request_doc = request_query[0]
+        request_doc_ref = request_doc.reference
         request_data = request_doc.to_dict()
-        receiver_id = request_data['receiver_id']
-
-        # Ensure the decliner is the actual receiver of the request
-        if decliner_id != receiver_id:
-            return jsonify({"message": "You are not authorized to decline this request."}), 403
-            
-        # Ensure the request is still pending
-        if request_data.get('status') != 'pending':
-            return jsonify({"message": "This friend request is no longer pending."}), 400
 
         # Update request status
         request_doc_ref.update({"status": "declined", "declined_at": firestore.SERVER_TIMESTAMP})
 
-        print(f"Friend request {request_id} declined.")
+        print(f"Friend request declined between {requester_id} and {decliner_id}.")
         return jsonify({"message": "Friend request declined."}), 200
 
     except Exception as e:
@@ -365,7 +366,7 @@ def decline_friend_request():
         return jsonify({"message": "An error occurred while declining friend request."}), 500
 
 
-@app.route('/friends/remove', methods=['POST'])
+@app.route('/remove_friend', methods=['POST']) # Changed route to match frontend expectation
 def remove_friend():
     """Removes a friend from a user's friend list in Firestore and cancels related requests."""
     data = request.json
