@@ -178,8 +178,8 @@ def get_friends(user_id):
         print(f"Error getting friends for {user_id}: {e}")
         return jsonify({"message": "Failed to load friends."}), 500
 
-# MODIFIED: Changed route to match frontend expectation
-@app.route('/send_friend_request', methods=['POST']) # Changed from /friends/send_request
+# NEW: Send Friend Request
+@app.route('/send_friend_request', methods=['POST'])
 def send_friend_request():
     """Sends a friend request from sender_id to receiver_id."""
     data = request.json
@@ -424,15 +424,90 @@ def remove_friend():
         print(f"Error removing friend: {e}")
         return jsonify({"message": "An error occurred while removing friend."}), 500
 
+# NEW: Endpoint to get unread message counts for a user
+@app.route('/get_unread_counts/<user_id>', methods=['GET'])
+def get_unread_counts(user_id):
+    """
+    Calculates and returns the number of unread messages for each friend of the given user.
+    Unread messages are those sent by a friend *after* the user's last_read_timestamp for that chat.
+    """
+    unread_counts = {}
+    try:
+        # Get the current user's friends
+        user_doc = db.collection('users').document(user_id).get()
+        if not user_doc.exists:
+            return jsonify({"message": "User not found."}), 404
+        friend_ids = user_doc.to_dict().get('friends', [])
+
+        for friend_id in friend_ids:
+            chat_id = '_'.join(sorted([user_id, friend_id]))
+            
+            # Get the last read timestamp for this chat from the current user's perspective
+            # Path: user_chat_metadata/{user_id}/chat_partners/{friend_id}
+            last_read_doc_ref = db.collection('user_chat_metadata').document(user_id).collection('chat_partners').document(friend_id)
+            last_read_doc = last_read_doc_ref.get()
+            
+            last_read_timestamp = None
+            if last_read_doc.exists:
+                last_read_timestamp_data = last_read_doc.to_dict().get('last_read_timestamp')
+                if last_read_timestamp_data:
+                    # Convert Firestore Timestamp object to datetime for comparison
+                    last_read_timestamp = last_read_timestamp_data.timestamp() # Get Unix timestamp (seconds)
+                else:
+                    # If document exists but timestamp is missing, treat as no messages read
+                    last_read_timestamp = datetime.min.timestamp() # Effectively start of time
+            else:
+                # If no metadata document exists, user has read nothing in this chat
+                last_read_timestamp = datetime.min.timestamp() # Effectively start of time
+
+            # Query messages in this chat sent by the friend
+            # that are newer than the last_read_timestamp
+            messages_query = db.collection('chats').document(chat_id).collection('messages') \
+                .where('sender_id', '==', friend_id) \
+                .order_by('timestamp') # Ensure ordering for comparison
+
+            unread_count = 0
+            for msg_doc in messages_query.stream():
+                msg_data = msg_doc.to_dict()
+                msg_timestamp = msg_data['timestamp'].timestamp() # Get Unix timestamp (seconds)
+                
+                if last_read_timestamp is None or msg_timestamp > last_read_timestamp:
+                    unread_count += 1
+            
+            unread_counts[friend_id] = unread_count
+
+        return jsonify({"unread_counts": unread_counts}), 200
+
+    except Exception as e:
+        print(f"Error getting unread counts for user {user_id}: {e}")
+        return jsonify({"message": "Failed to get unread counts."}), 500
+
+
 @app.route('/chat_history/<user1_id>/<user2_id>', methods=['GET'])
 def get_chat_history(user1_id, user2_id):
-    """Retrieves chat messages between two users from Firestore."""
+    """
+    Retrieves chat messages between two users from Firestore and updates the last_read_timestamp
+    for user1 in the chat with user2.
+    """
     chat_id = '_'.join(sorted([user1_id, user2_id]))
     messages = []
+    latest_message_timestamp = firestore.SERVER_TIMESTAMP # Default if no messages
+
     try:
         messages_ref = db.collection('chats').document(chat_id).collection('messages').order_by('timestamp').stream()
         for msg_doc in messages_ref:
-            messages.append(msg_doc.to_dict())
+            msg_data = msg_doc.to_dict()
+            messages.append(msg_data)
+            # Keep track of the latest message timestamp
+            latest_message_timestamp = msg_data['timestamp']
+
+        # Update the last_read_timestamp for user1 in their chat metadata with user2
+        # Path: user_chat_metadata/{user1_id}/chat_partners/{user2_id}
+        user1_chat_metadata_ref = db.collection('user_chat_metadata').document(user1_id).collection('chat_partners').document(user2_id)
+        user1_chat_metadata_ref.set({
+            'last_read_timestamp': latest_message_timestamp
+        }, merge=True) # Use merge=True to create if not exists, or update if exists
+
         return jsonify(messages), 200
     except Exception as e:
         print(f"Error getting chat history for {chat_id}: {e}")
