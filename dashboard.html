@@ -237,9 +237,17 @@
 
     <script>
         const API_BASE_URL = 'https://chatting-app-e4if.onrender.com';
-        // Changed from sessionStorage to localStorage
-        const loggedInUserId = localStorage.getItem('loggedInUserId');
-        const loggedInUsername = localStorage.getItem('loggedInUsername');
+        
+        // Retrieve user ID and username from localStorage or sessionStorage
+        // Check localStorage first (for "Remember Me")
+        let loggedInUserId = localStorage.getItem('loggedInUserId');
+        let loggedInUsername = localStorage.getItem('loggedInUsername');
+
+        // If not in localStorage, check sessionStorage (for non-"Remember Me" logins)
+        if (!loggedInUserId || !loggedInUsername) {
+            loggedInUserId = sessionStorage.getItem('loggedInUserId');
+            loggedInUsername = sessionStorage.getItem('loggedInUsername');
+        }
 
         let allOtherUsers = []; // Store all other users for client-side filtering
         let currentFriends = new Set(); // To store IDs of current friends
@@ -554,7 +562,7 @@
          * @param {string} friendUsername - The username of the friend to chat with.
          */
         function startChat(friendId, friendUsername) {
-            // Changed from sessionStorage to localStorage
+            // Store chatting partner info in localStorage (since login persistence is now handled by localStorage/sessionStorage)
             localStorage.setItem('chattingWithId', friendId);
             localStorage.setItem('chattingWithUsername', friendUsername);
             window.location.href = `${API_BASE_URL}/chat.html`; // Use absolute URL
@@ -574,8 +582,9 @@
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    // Changed from sessionStorage.clear() to localStorage.clear()
-                    localStorage.clear(); // Clear all localStorage
+                    // Clear both localStorage and sessionStorage to ensure complete logout
+                    localStorage.clear();
+                    sessionStorage.clear();
                     window.location.href = `${API_BASE_URL}/index.html`; // Use absolute URL
                 } else {
                     displayMessage(data.message, 'error');

@@ -223,9 +223,16 @@
 
     <script>
         const API_BASE_URL = 'https://chatting-app-e4if.onrender.com';
-        // Changed from sessionStorage to localStorage
-        const loggedInUserId = localStorage.getItem('loggedInUserId');
-        const loggedInUsername = localStorage.getItem('loggedInUsername');
+        
+        // Retrieve loggedInUserId and loggedInUsername from localStorage or sessionStorage
+        let loggedInUserId = localStorage.getItem('loggedInUserId');
+        let loggedInUsername = localStorage.getItem('loggedInUsername');
+        if (!loggedInUserId || !loggedInUsername) {
+            loggedInUserId = sessionStorage.getItem('loggedInUserId');
+            loggedInUsername = sessionStorage.getItem('loggedInUsername');
+        }
+
+        // Retrieve chattingWithId and chattingWithUsername from localStorage (set by dashboard.html)
         const chattingWithId = localStorage.getItem('chattingWithId');
         const chattingWithUsername = localStorage.getItem('chattingWithUsername');
 
@@ -378,9 +385,7 @@
          * Navigates back to the dashboard.
          */
         function goBack() {
-            // Optional: Clear chattingWithId and chattingWithUsername from localStorage if desired
-            // localStorage.removeItem('chattingWithId');
-            // localStorage.removeItem('chattingWithUsername');
+            // No need to clear chattingWithId/Username here, as they are used for persistence
             window.location.href = `${API_BASE_URL}/dashboard.html`; // Use absolute URL
         }
 

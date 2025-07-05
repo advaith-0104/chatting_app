@@ -100,6 +100,22 @@
         .hidden {
             display: none;
         }
+        /* Style for remember me checkbox */
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        .remember-me input[type="checkbox"] {
+            width: auto; /* Override 100% width */
+            margin: 0;
+            padding: 0;
+        }
+        .remember-me label {
+            margin-bottom: 0; /* Override default label margin */
+        }
 
         /* Responsive adjustments */
         @media (max-width: 600px) {
@@ -134,6 +150,10 @@
                 <label for="loginPassword">Password:</label>
                 <input type="password" id="loginPassword" placeholder="Enter your password">
             </div>
+            <div class="remember-me">
+                <input type="checkbox" id="rememberMe" checked>
+                <label for="rememberMe">Remember me</label>
+            </div>
             <button onclick="loginUser()">Login</button>
             <p class="toggle-link" onclick="toggleForm()">Don't have an account? Register here.</p>
         </div>
@@ -165,11 +185,14 @@
     <script>
         const API_BASE_URL = 'https://chatting-app-e4if.onrender.com';
 
-        // Check if user is already logged in (persisted in localStorage)
-        const storedUserId = localStorage.getItem('loggedInUserId');
-        const storedUsername = localStorage.getItem('loggedInUsername');
-        if (storedUserId && storedUsername) {
-            // If user data exists in localStorage, redirect directly to dashboard
+        // Check if user is already logged in (persisted in localStorage or sessionStorage)
+        const storedUserId_localStorage = localStorage.getItem('loggedInUserId');
+        const storedUsername_localStorage = localStorage.getItem('loggedInUsername');
+        const storedUserId_sessionStorage = sessionStorage.getItem('loggedInUserId');
+        const storedUsername_sessionStorage = sessionStorage.getItem('loggedInUsername');
+
+        if ((storedUserId_localStorage && storedUsername_localStorage) || (storedUserId_sessionStorage && storedUsername_sessionStorage)) {
+            // If user data exists in either storage, redirect directly to dashboard
             window.location.href = `${API_BASE_URL}/dashboard.html`;
         }
 
@@ -251,6 +274,7 @@
         async function loginUser() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
+            const rememberMe = document.getElementById('rememberMe').checked; // Get checkbox state
 
             try {
                 const response = await fetch(`${API_BASE_URL}/login`, {
@@ -263,9 +287,20 @@
                 const data = await response.json();
                 if (response.ok) {
                     displayMessage(data.message, 'success');
-                    // Store user ID and username in localStorage for persistence
-                    localStorage.setItem('loggedInUserId', data.user_id);
-                    localStorage.setItem('loggedInUsername', data.username);
+                    // Store user ID and username based on 'rememberMe' checkbox
+                    if (rememberMe) {
+                        localStorage.setItem('loggedInUserId', data.user_id);
+                        localStorage.setItem('loggedInUsername', data.username);
+                        // Clear sessionStorage if it was used before (e.g., if user logged in without rememberMe, then logs out and logs back in with rememberMe)
+                        sessionStorage.removeItem('loggedInUserId');
+                        sessionStorage.removeItem('loggedInUsername');
+                    } else {
+                        sessionStorage.setItem('loggedInUserId', data.user_id);
+                        sessionStorage.setItem('loggedInUsername', data.username);
+                        // Clear localStorage if it was used before (e.g., if user logged in with rememberMe, then logs out and logs back in without rememberMe)
+                        localStorage.removeItem('loggedInUserId');
+                        localStorage.removeItem('loggedInUsername');
+                    }
                     window.location.href = `${API_BASE_URL}/dashboard.html`; // Redirect to dashboard
                 } else {
                     displayMessage(data.message, 'error');
