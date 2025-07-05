@@ -479,5 +479,15 @@ def send_message():
         print(f"Error sending message: {e}")
         return jsonify({"message": "An error occurred while sending message."}), 500
 
+# NEW: Logout Route
+@app.route('/logout', methods=['POST'])
+def logout_user():
+    """Handles user logout. For now, it's a simple confirmation."""
+    # In a real app, you might invalidate a token or clear server-side session here.
+    # Since we're using sessionStorage on the frontend, this primarily confirms the action.
+    user_id = request.json.get('user_id')
+    print(f"User {user_id} requested logout.")
+    return jsonify({"message": "Logged out successfully!"}), 200
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
