@@ -241,6 +241,9 @@
         const loggedInUsername = sessionStorage.getItem('loggedInUsername');
 
         let allOtherUsers = []; // Store all other users for client-side filtering
+        let currentFriends = new Set(); // To store IDs of current friends
+        let currentSentRequests = new Set(); // To store IDs of users to whom current user sent requests
+        let currentReceivedRequests = new Set(); // To store IDs of users who sent current user requests
 
         // Redirect to login if not authenticated
         if (!loggedInUserId || !loggedInUsername) {
@@ -272,7 +275,8 @@
         async function loadDashboardData() {
             await loadFriends();
             await loadFriendRequests();
-            await loadOtherUsers(); // Load all other users initially
+            await loadAllUsersForSearch(); // Load all users into memory for search
+            searchUsers(); // Call searchUsers to initially display nothing if input is empty
         }
 
         /**
@@ -284,9 +288,11 @@
                 const data = await response.json();
                 const friendsList = document.getElementById('friendsList');
                 friendsList.innerHTML = ''; // Clear existing list
+                currentFriends.clear(); // Clear previous friends set
 
                 if (data.friends && data.friends.length > 0) {
                     data.friends.forEach(friend => {
+                        currentFriends.add(friend.id); // Add friend ID to set
                         const li = document.createElement('li');
                         li.className = 'user-list-item';
                         li.innerHTML = `
@@ -316,9 +322,12 @@
                 const data = await response.json();
                 const friendRequestsList = document.getElementById('friendRequestsList');
                 friendRequestsList.innerHTML = ''; // Clear existing list
+                currentSentRequests.clear();
+                currentReceivedRequests.clear();
 
-                if (data.requests && data.requests.length > 0) {
+                if (data.requests && data.requests.length > 0) { // Incoming requests
                     data.requests.forEach(request => {
+                        currentReceivedRequests.add(request.sender_id);
                         const li = document.createElement('li');
                         li.className = 'user-list-item';
                         li.innerHTML = `
@@ -333,6 +342,21 @@
                 } else {
                     friendRequestsList.innerHTML = '<li class="user-list-item">No pending friend requests.</li>';
                 }
+
+                if (data.outgoing && data.outgoing.length > 0) { // Outgoing requests
+                    data.outgoing.forEach(request => {
+                        currentSentRequests.add(request.receiver_id);
+                        const li = document.createElement('li');
+                        li.className = 'user-list-item';
+                        li.innerHTML = `
+                            <span>Request sent to ${request.receiver_username}</span>
+                            <div>
+                                <!-- No buttons for outgoing requests, or a cancel button -->
+                            </div>
+                        `;
+                        friendRequestsList.appendChild(li);
+                    });
+                }
             } catch (error) {
                 console.error('Error loading friend requests:', error);
                 displayMessage('Failed to load friend requests.', 'error');
@@ -340,35 +364,24 @@
         }
 
         /**
-         * Loads all other users (not friends or self) and stores them for searching.
+         * Loads all users from the backend and filters them for the search pool.
          */
-        async function loadOtherUsers() {
+        async function loadAllUsersForSearch() {
             try {
                 const response = await fetch(`${API_BASE_URL}/users/${loggedInUserId}`);
                 const data = await response.json();
-                // Filter out self and existing friends/pending requests from 'other users'
-                const friendsResponse = await fetch(`${API_BASE_URL}/friends/${loggedInUserId}`);
-                const friendsData = await friendsResponse.json();
-                const friendRequestsResponse = await fetch(`${API_BASE_URL}/friend_requests/${loggedInUserId}`);
-                const friendRequestsData = await friendRequestsResponse.json();
-
-                const friendIds = new Set(friendsData.friends.map(f => f.id));
-                const sentRequestIds = new Set(friendRequestsData.requests.map(r => r.receiver_id)); // requests sent by current user
-                const receivedRequestIds = new Set(friendRequestsData.requests.map(r => r.sender_id)); // requests received by current user
-
+                
+                // Filter out self, existing friends, and users with pending/received requests
                 allOtherUsers = data.users.filter(user => 
                     user.id !== loggedInUserId && // Not self
-                    !friendIds.has(user.id) && // Not already a friend
-                    !sentRequestIds.has(user.id) && // Not someone you've sent a request to
-                    !receivedRequestIds.has(user.id) // Not someone who has sent you a request
+                    !currentFriends.has(user.id) && // Not already a friend
+                    !currentSentRequests.has(user.id) && // Not someone you've sent a request to
+                    !currentReceivedRequests.has(user.id) // Not someone who has sent you a request
                 );
-                
-                // Display all other users initially (or none, if search is empty)
-                displaySearchResults(allOtherUsers);
-
+                // No initial display here, searchUsers will handle it based on input
             } catch (error) {
-                console.error('Error loading other users:', error);
-                displayMessage('Failed to load other users for search.', 'error');
+                console.error('Error loading all users for search:', error);
+                displayMessage('Failed to load users for search.', 'error');
             }
         }
 
@@ -376,23 +389,22 @@
          * Filters and displays users based on search input.
          */
         function searchUsers() {
-            const searchInput = document.getElementById('userSearchInput').value.toLowerCase();
+            const searchInput = document.getElementById('userSearchInput').value.trim().toLowerCase();
+            const otherUsersList = document.getElementById('otherUsersList');
+            otherUsersList.innerHTML = ''; // Always clear previous results
+
+            if (searchInput.length === 0) {
+                // If search input is empty, display no users
+                otherUsersList.innerHTML = '<li class="user-list-item">Type a username to search.</li>';
+                return;
+            }
+
             const filteredUsers = allOtherUsers.filter(user => 
                 user.username.toLowerCase().includes(searchInput)
             );
-            displaySearchResults(filteredUsers);
-        }
-
-        /**
-         * Displays the search results in the 'otherUsersList'.
-         * @param {Array} users - Array of user objects to display.
-         */
-        function displaySearchResults(users) {
-            const otherUsersList = document.getElementById('otherUsersList');
-            otherUsersList.innerHTML = ''; // Clear previous results
-
-            if (users.length > 0) {
-                users.forEach(user => {
+            
+            if (filteredUsers.length > 0) {
+                filteredUsers.forEach(user => {
                     const li = document.createElement('li');
                     li.className = 'user-list-item';
                     li.innerHTML = `
@@ -402,10 +414,9 @@
                     otherUsersList.appendChild(li);
                 });
             } else {
-                otherUsersList.innerHTML = '<li class="user-list-item">No users found or no other users available.</li>';
+                otherUsersList.innerHTML = '<li class="user-list-item">No users found.</li>';
             }
         }
-
 
         /**
          * Sends a friend request to another user.
@@ -433,7 +444,7 @@
                 const data = await response.json();
                 if (response.ok) {
                     displayMessage(data.message, 'success');
-                    loadDashboardData(); // Refresh lists
+                    await loadDashboardData(); // Refresh all lists
                 } else {
                     displayMessage(data.message, 'error');
                 }
@@ -462,7 +473,7 @@
                 const data = await response.json();
                 if (response.ok) {
                     displayMessage(data.message, 'success');
-                    loadDashboardData(); // Refresh lists
+                    await loadDashboardData(); // Refresh all lists
                 } else {
                     displayMessage(data.message, 'error');
                 }
@@ -491,7 +502,7 @@
                 const data = await response.json();
                 if (response.ok) {
                     displayMessage(data.message, 'success');
-                    loadDashboardData(); // Refresh lists
+                    await loadDashboardData(); // Refresh all lists
                 } else {
                     displayMessage(data.message, 'error');
                 }
@@ -525,7 +536,7 @@
                 const data = await response.json();
                 if (response.ok) {
                     displayMessage(data.message, 'success');
-                    loadDashboardData(); // Refresh lists
+                    await loadDashboardData(); // Refresh all lists
                 } else {
                     displayMessage(data.message, 'error');
                 }
